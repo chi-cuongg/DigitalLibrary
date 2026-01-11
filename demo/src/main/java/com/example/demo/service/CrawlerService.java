@@ -973,8 +973,8 @@ public class CrawlerService {
             }
             book.setCategories(categories);
 
-            // Process file: ALWAYS upload to Drive (if available), optionally save to local
-            // downloadFile checkbox: true = save to Drive + local, false = save to Drive only
+            // Process file: ALWAYS download to local, ALWAYS upload to Drive, delete local if checkbox not checked
+            // downloadFile checkbox: true = keep file in uploads, false = delete file from uploads after upload
             if (info.getDownloadUrl() != null && !info.getDownloadUrl().isEmpty()) {
                 try {
                     String fileName = extractFileNameFromUrl(info.getDownloadUrl());
@@ -984,74 +984,99 @@ public class CrawlerService {
                     boolean driveAvailable = googleDriveService.isDriveAvailable();
                     logger.info("🔍 Google Drive availability check: {}",
                             driveAvailable ? "✅ AVAILABLE" : "❌ NOT AVAILABLE");
-                    logger.info("📋 Download checkbox: {} (true = Drive + Local, false = Drive only)",
-                            downloadFile ? "TÍCH" : "KHÔNG TÍCH");
+                    logger.info("📋 Download checkbox value: {} (true = keep in uploads, false = delete after upload)",
+                            downloadFile);
 
                     String filePath = null;
                     String displayFileName = null;
                     String fileType = "application/pdf";
                     Long fileSize = 0L;
-                    String localFilePath = null; // For local storage when checkbox is checked
+                    String localFilePath = null;
+
+                    // STEP 1: ALWAYS download file to uploads folder first
+                    logger.info("📥 Step 1: Downloading file to uploads folder...");
+                    try {
+                        localFilePath = fileStorageService.downloadFileFromUrl(info.getDownloadUrl(), fileName);
+                        logger.info("✅✅✅ File downloaded to LOCAL STORAGE: {}", localFilePath);
+                        fileSize = fileStorageService.getFileSize(localFilePath);
+                        logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
+                        
+                        // Validate file size
+                        if (fileSize < 10240) {
+                            logger.error("❌ Downloaded file is too small ({} bytes), likely not a valid file.", fileSize);
+                            fileStorageService.deleteFile(localFilePath);
+                            throw new IOException("Downloaded file is too small (" + fileSize + " bytes).");
+                        }
+                    } catch (Exception downloadEx) {
+                        logger.error("❌ Failed to download file to uploads: {}", downloadEx.getMessage(), downloadEx);
+                        throw new IOException("Could not download file: " + downloadEx.getMessage(), downloadEx);
+                    }
 
                     if (driveAvailable) {
-                        // Google Drive is available - ALWAYS upload to Drive first
-                        logger.info("🚀 Google Drive is available. Uploading to Drive...");
+                        // STEP 2: Upload file from uploads to Google Drive
+                        logger.info("🚀 Step 2: Uploading file from uploads to Google Drive...");
                         try {
-                            logger.info("🚀 Attempting to upload file from URL to Google Drive: {}",
-                                    info.getDownloadUrl());
-                            // Upload to Google Drive and get file ID
-                            String driveFileId = googleDriveService.uploadFileFromUrl(info.getDownloadUrl(), fileName);
-                            logger.info("✅✅✅ File uploaded to Google Drive successfully! ✅✅✅");
-                            logger.info("📎 Drive File ID: {}", driveFileId);
-
-                            // Get file metadata from Drive
-                            File driveFile = googleDriveService.getFileMetadata(driveFileId);
-                            fileSize = driveFile.getSize() != null ? driveFile.getSize() : 0L;
-                            logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
-
-                            // Validate file size - should be at least 10KB for a real file
-                            if (fileSize < 10240) {
-                                logger.error("❌ Uploaded file is too small ({} bytes), likely not a valid file.",
-                                        fileSize);
-                                // Delete from Drive if too small
-                                try {
-                                    googleDriveService.deleteFile(driveFileId);
-                                } catch (Exception deleteEx) {
-                                    logger.warn("⚠️ Failed to delete invalid file from Drive: {}",
-                                            deleteEx.getMessage());
+                            java.io.File localFile = fileStorageService.getFileStorageLocation().resolve(localFilePath).toFile();
+                            try (java.io.FileInputStream fileInputStream = new java.io.FileInputStream(localFile)) {
+                                // Extract display filename from localFilePath (remove UUID prefix)
+                                String displayName = fileName;
+                                if (localFilePath.contains("_") && localFilePath.length() > 40) {
+                                    int underscoreIndex = localFilePath.indexOf('_');
+                                    if (underscoreIndex > 0) {
+                                        displayName = localFilePath.substring(underscoreIndex + 1);
+                                    }
                                 }
-                                throw new IOException("Uploaded file is too small (" + fileSize + " bytes).");
-                            }
+                                
+                                String driveFileId = googleDriveService.uploadFile(fileInputStream, displayName, fileType);
+                                logger.info("✅✅✅ File uploaded to Google Drive successfully! ✅✅✅");
+                                logger.info("📎 Drive File ID: {}", driveFileId);
 
-                            // Use Drive file ID as primary storage
-                            displayFileName = driveFile.getName();
-                            if (fileName != null && !fileName.isEmpty() && fileName.length() > 3
-                                    && !fileName.equals("download.pdf")) {
-                                displayFileName = fileName;
-                            }
-                            filePath = driveFileId; // Store Drive file ID in database
-                            fileType = driveFile.getMimeType() != null ? driveFile.getMimeType() : "application/pdf";
+                                // Get file metadata from Drive
+                                File driveFile = googleDriveService.getFileMetadata(driveFileId);
+                                fileSize = driveFile.getSize() != null ? driveFile.getSize() : fileSize;
+                                logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
 
-                            logger.info("✅✅✅ File saved to Google Drive! ✅✅✅");
-                            logger.info("🆔 Drive File ID (stored in database): {}", filePath);
-                            logger.info("📄 Display name: {}", displayFileName);
-                            logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
-
-                            // If checkbox is checked, ALSO save to local storage
-                            if (downloadFile) {
-                                logger.info("📥 Checkbox is checked - Also downloading to local storage...");
-                                try {
-                                    localFilePath = fileStorageService.downloadFileFromUrl(info.getDownloadUrl(), fileName);
-                                    logger.info("✅✅✅ File ALSO saved to LOCAL STORAGE: {}", localFilePath);
-                                    logger.info("📁 Local path: {}", localFilePath);
-                                    // Note: We still use Drive file ID in database, local file is just a copy
-                                } catch (Exception localEx) {
-                                    logger.warn("⚠️ Failed to save to local storage (Drive upload succeeded): {}", 
-                                            localEx.getMessage());
-                                    // Continue - Drive upload succeeded, that's the primary storage
+                                // Validate file size - should be at least 10KB for a real file
+                                if (fileSize < 10240) {
+                                    logger.error("❌ Uploaded file is too small ({} bytes), likely not a valid file.",
+                                            fileSize);
+                                    // Delete from Drive if too small
+                                    try {
+                                        googleDriveService.deleteFile(driveFileId);
+                                    } catch (Exception deleteEx) {
+                                        logger.warn("⚠️ Failed to delete invalid file from Drive: {}",
+                                                deleteEx.getMessage());
+                                    }
+                                    throw new IOException("Uploaded file is too small (" + fileSize + " bytes).");
                                 }
-                            } else {
-                                logger.info("✅ Checkbox NOT checked - File stored ONLY on Google Drive (not saved locally)");
+
+                                // Use Drive file ID as primary storage
+                                displayFileName = driveFile.getName();
+                                if (fileName != null && !fileName.isEmpty() && fileName.length() > 3
+                                        && !fileName.equals("download.pdf")) {
+                                    displayFileName = fileName;
+                                }
+                                filePath = driveFileId; // Store Drive file ID in database
+                                fileType = driveFile.getMimeType() != null ? driveFile.getMimeType() : "application/pdf";
+
+                                logger.info("✅✅✅ File saved to Google Drive! ✅✅✅");
+                                logger.info("🆔 Drive File ID (stored in database): {}", filePath);
+                                logger.info("📄 Display name: {}", displayFileName);
+                                logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
+
+                                // STEP 3: Delete local file if checkbox is NOT checked
+                                if (!downloadFile) {
+                                    logger.info("🗑️ Step 3: Checkbox NOT checked - Deleting file from uploads...");
+                                    boolean deleted = fileStorageService.deleteFile(localFilePath);
+                                    if (deleted) {
+                                        logger.info("✅✅✅ File deleted from uploads folder (kept only on Drive) ✅✅✅");
+                                    } else {
+                                        logger.warn("⚠️ Failed to delete file from uploads: {}", localFilePath);
+                                    }
+                                } else {
+                                    logger.info("✅ Step 3: Checkbox checked - File kept in uploads folder");
+                                    logger.info("📁 Local file path: {}", localFilePath);
+                                }
                             }
 
                         } catch (Exception driveEx) {
@@ -1062,72 +1087,47 @@ public class CrawlerService {
                             }
                             logger.error("Error stack trace:", driveEx);
                             
-                            // If Drive upload failed, fallback to local ONLY if checkbox is checked
-                            if (downloadFile) {
-                                logger.warn("🔄 Drive upload failed but checkbox is checked - Falling back to LOCAL STORAGE...");
-                                try {
-                                    localFilePath = fileStorageService.downloadFileFromUrl(info.getDownloadUrl(), fileName);
-                                    logger.info("✅ File saved locally as fallback: {}", localFilePath);
-
-                                    fileSize = fileStorageService.getFileSize(localFilePath);
-                                    logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
-
-                                    // Validate file size
-                                    if (fileSize < 10240) {
-                                        logger.error("❌ Downloaded file is too small ({} bytes), likely not a valid file.",
-                                                fileSize);
-                                        throw new IOException("Downloaded file is too small (" + fileSize + " bytes).");
-                                    }
-
-                                    // Determine actual filename from saved filename
-                                    displayFileName = localFilePath;
-                                    if (localFilePath.contains("_") && localFilePath.length() > 40) {
-                                        int underscoreIndex = localFilePath.indexOf('_');
-                                        if (underscoreIndex > 0) {
-                                            displayFileName = localFilePath.substring(underscoreIndex + 1);
-                                        }
-                                    }
-
-                                    if (fileName != null && !fileName.isEmpty() && fileName.length() > 3
-                                            && !fileName.equals("download.pdf")) {
-                                        displayFileName = fileName;
-                                    }
-
-                                    filePath = localFilePath; // Use local path in database
-                                    fileType = detectFileType(localFilePath);
-
-                                    logger.info("💾 File saved to LOCAL STORAGE (as fallback, Drive unavailable)");
-                                    logger.info("📁 Local path: {}", filePath);
-                                    logger.info("📄 Display name: {}", displayFileName);
-                                } catch (Exception localFallbackEx) {
-                                    logger.error("❌❌❌ Local storage fallback also FAILED: {}", localFallbackEx.getMessage());
-                                    throw new IOException("Both Drive upload and local storage failed: " + localFallbackEx.getMessage(), localFallbackEx);
-                                }
-                            } else {
-                                logger.error("⚠️⚠️⚠️ Drive upload failed and checkbox NOT checked - File will NOT be saved.");
-                                logger.error("⚠️⚠️⚠️ This book will be saved WITHOUT the file attachment.");
-                                throw new IOException("Google Drive upload failed and local storage is disabled (checkbox not checked): " + driveEx.getMessage(), driveEx);
-                            }
-                        }
-                    } else {
-                        // Google Drive is NOT available
-                        if (downloadFile) {
-                            // Checkbox is checked - use local storage
-                            logger.warn("⚠️ Google Drive is not available, but checkbox is checked - using local storage");
-                            logger.info("📥 Downloading file to local storage: {}", info.getDownloadUrl());
-                            localFilePath = fileStorageService.downloadFileFromUrl(info.getDownloadUrl(), fileName);
-                            logger.info("✅ File saved locally as: {}", localFilePath);
-
-                            fileSize = fileStorageService.getFileSize(localFilePath);
-                            logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
-
+                            // File already downloaded to uploads, use it as fallback
+                            logger.warn("🔄 Drive upload failed - Using local file as fallback...");
+                            
                             // Validate file size
                             if (fileSize < 10240) {
                                 logger.error("❌ Downloaded file is too small ({} bytes), likely not a valid file.",
                                         fileSize);
+                                // Delete invalid file
+                                fileStorageService.deleteFile(localFilePath);
                                 throw new IOException("Downloaded file is too small (" + fileSize + " bytes).");
                             }
 
+                            // Determine actual filename from saved filename
+                            displayFileName = localFilePath;
+                            if (localFilePath.contains("_") && localFilePath.length() > 40) {
+                                int underscoreIndex = localFilePath.indexOf('_');
+                                if (underscoreIndex > 0) {
+                                    displayFileName = localFilePath.substring(underscoreIndex + 1);
+                                }
+                            }
+
+                            if (fileName != null && !fileName.isEmpty() && fileName.length() > 3
+                                    && !fileName.equals("download.pdf")) {
+                                displayFileName = fileName;
+                            }
+
+                            filePath = localFilePath; // Use local path in database
+                            fileType = detectFileType(localFilePath);
+
+                            logger.info("💾 File saved to LOCAL STORAGE (Drive upload failed, using local file)");
+                            logger.info("📁 Local path: {}", filePath);
+                            logger.info("📄 Display name: {}", displayFileName);
+                        }
+                    } else {
+                        // Google Drive is NOT available - file already downloaded in STEP 1
+                        logger.warn("⚠️ Google Drive is not available - Using local file from STEP 1");
+                        
+                        if (downloadFile) {
+                            // Checkbox is checked - keep file in uploads
+                            logger.info("✅ Checkbox checked - File kept in uploads folder");
+                            
                             // Determine actual filename from saved filename
                             displayFileName = localFilePath;
                             if (localFilePath.contains("_") && localFilePath.length() > 40) {
@@ -1149,10 +1149,13 @@ public class CrawlerService {
                             logger.info("📁 Local path: {}", filePath);
                             logger.info("📄 Display name: {}", displayFileName);
                         } else {
-                            // Drive not available AND checkbox not checked - skip file
-                            logger.warn("⚠️⚠️⚠️ Google Drive not available and checkbox NOT checked - File will NOT be saved.");
+                            // Drive not available AND checkbox not checked - delete file and skip
+                            logger.warn("⚠️⚠️⚠️ Google Drive not available and checkbox NOT checked - Deleting file from uploads...");
+                            boolean deleted = fileStorageService.deleteFile(localFilePath);
+                            if (deleted) {
+                                logger.info("✅ File deleted from uploads folder");
+                            }
                             logger.warn("⚠️⚠️⚠️ This book will be saved WITHOUT the file attachment.");
-                            // Don't throw exception, just skip file saving
                             filePath = null;
                         }
                     }

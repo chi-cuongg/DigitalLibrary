@@ -33,6 +33,39 @@
                     <i class="fa-solid fa-users"></i>
                 </div>
             </div>
+            <div class="stat-card" th:classappend="${driveAvailable} ? 'stat-card-success' : 'stat-card-warning'">
+                <div class="stat-info">
+                    <h3>Google Drive</h3>
+                    <p class="stat-value" th:text="${driveAvailable ? 'Đã kết nối' : 'Chưa kết nối'}">Chưa kết nối</p>
+                </div>
+                <div class="stat-icon">
+                    <i class="fa-brands fa-google-drive"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Google Drive Connection Card -->
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-header">
+                <h3 class="card-title">Kết nối Google Drive</h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+                <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+                
+                <div th:if="${driveAvailable}">
+                    <p class="text-success">✅ Google Drive đã được kết nối và sẵn sàng sử dụng!</p>
+                    <p>Sách của bạn sẽ được lưu trữ trên Google Drive khi crawl hoặc upload.</p>
+                    <a th:href="@{/oauth2/authorize}" class="btn btn-secondary">Kết nối lại Google Drive</a>
+                </div>
+                <div th:unless="${driveAvailable}">
+                    <p class="text-warning">⚠️ Google Drive chưa được kết nối.</p>
+                    <p>Để lưu trữ sách trên Google Drive, vui lòng kết nối tài khoản Google của bạn.</p>
+                    <a th:href="@{/oauth2/authorize}" class="btn btn-primary">
+                        <i class="fa-brands fa-google"></i> Kết nối Google Drive
+                    </a>
+                </div>
+            </div>
         </div>
 
         <!-- Recent Activity or Other Widgets could go here -->

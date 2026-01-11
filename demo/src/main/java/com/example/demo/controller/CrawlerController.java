@@ -72,8 +72,10 @@ public class CrawlerController {
     @ResponseBody
     public Map<String, Object> crawl(@RequestParam String url,
                                       @RequestParam(defaultValue = "1") int maxBooks,
-                                      @RequestParam(defaultValue = "true") boolean downloadFiles) {
+                                      @RequestParam(defaultValue = "false") boolean downloadFiles) {
         Map<String, Object> response = new HashMap<>();
+        
+        logger.info("🔍 CrawlerController received downloadFiles parameter: {} (boolean)", downloadFiles);
         
         try {
             CrawlerService.CrawlResult result = crawlerService.crawlBooksFromUrl(url, maxBooks, downloadFiles);
@@ -102,7 +104,7 @@ public class CrawlerController {
     @PostMapping("/start")
     public String startCrawl(@RequestParam String url,
                             @RequestParam(defaultValue = "1") int maxBooks,
-                            @RequestParam(defaultValue = "true") boolean downloadFiles,
+                            @RequestParam(defaultValue = "false") boolean downloadFiles,
                             RedirectAttributes redirectAttributes) {
         try {
             CrawlerService.CrawlResult result = crawlerService.crawlBooksFromUrl(url, maxBooks, downloadFiles);

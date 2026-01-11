@@ -1,17 +1,28 @@
 package com.example.demo.service;
 
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.example.demo.model.OAuthToken;
+import com.example.demo.repository.OAuthTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -22,6 +33,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.GeneralSecurityException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,68 +52,124 @@ public class GoogleDriveService {
     @Value("${google.drive.credentials.path:credentials.json}")
     private String credentialsPath;
 
+    @Value("${google.oauth2.client.id:}")
+    private String clientId;
+
+    @Value("${google.oauth2.client.secret:}")
+    private String clientSecret;
+
+    @Value("${google.oauth2.redirect.uri:http://localhost:8080/oauth2/callback}")
+    private String redirectUri;
+
+    @Autowired
+    private OAuthTokenRepository oAuthTokenRepository;
+
     private Drive driveService;
 
     /**
-     * Initialize Drive service with Service Account credentials
+     * Save OAuth token to database
+     */
+    public void saveOAuthToken(String refreshToken, String accessToken, Long expiresInSeconds) {
+        try {
+            OAuthToken token = oAuthTokenRepository.findFirstByOrderByUpdatedAtDesc()
+                    .orElse(new OAuthToken());
+            
+            token.setRefreshToken(refreshToken);
+            token.setAccessToken(accessToken);
+            if (expiresInSeconds != null && expiresInSeconds > 0) {
+                token.setExpiresAt(LocalDateTime.now().plusSeconds(expiresInSeconds));
+            }
+            
+            oAuthTokenRepository.save(token);
+            logger.info("✅ OAuth token saved to database");
+        } catch (Exception e) {
+            logger.error("❌ Error saving OAuth token: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get OAuth token from database
+     */
+    private OAuthToken getOAuthToken() {
+        try {
+            return oAuthTokenRepository.findFirstByOrderByUpdatedAtDesc().orElse(null);
+        } catch (Exception e) {
+            logger.warn("Error getting OAuth token from database: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Initialize Drive service with OAuth 2.0 credentials
      */
     private Drive getDriveService() throws IOException, GeneralSecurityException {
         if (driveService == null) {
-            logger.info("🔍 Initializing Google Drive service...");
-            NetHttpTransport HTTP_TRANSPORT = com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport();
+            logger.info("🔍 Initializing Google Drive service with OAuth 2.0...");
             
-            InputStream credentialsStream = null;
+            // Check if OAuth credentials are configured
+            if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
+                logger.error("================================================");
+                logger.error("❌ OAuth 2.0 credentials NOT CONFIGURED!");
+                logger.error("Please configure OAuth 2.0 in application.properties:");
+                logger.error("google.oauth2.client.id=YOUR_CLIENT_ID");
+                logger.error("google.oauth2.client.secret=YOUR_CLIENT_SECRET");
+                logger.error("google.oauth2.redirect.uri=http://localhost:8080/oauth2/callback");
+                logger.error("See file: OAUTH2_SETUP_GUIDE.md for detailed instructions");
+                logger.error("================================================");
+                logger.warn("⚠️ Google Drive integration is DISABLED. Files will be saved locally.");
+                return null;
+            }
+            
+            // Get refresh token from database
+            OAuthToken token = getOAuthToken();
+            if (token == null || token.getRefreshToken() == null || token.getRefreshToken().isEmpty()) {
+                logger.warn("⚠️ No OAuth token found. Please authorize the application first.");
+                logger.warn("⚠️ Visit /oauth2/authorize to start authorization");
+                return null;
+            }
+            
             try {
-                // Try to load from classpath first
-                Resource resource = new ClassPathResource(credentialsPath);
-                if (resource.exists()) {
-                    credentialsStream = resource.getInputStream();
-                    logger.info("✅ Loading credentials from classpath: {}", credentialsPath);
-                } else {
-                    // Try from file system
-                    java.io.File credentialsFile = new java.io.File(credentialsPath);
-                    if (credentialsFile.exists()) {
-                        credentialsStream = new FileInputStream(credentialsFile);
-                        logger.info("✅ Loading credentials from file system: {}", credentialsPath);
-                    } else {
-                        // Try default location
-                        credentialsFile = new java.io.File("credentials.json");
-                        if (credentialsFile.exists()) {
-                            credentialsStream = new FileInputStream(credentialsFile);
-                            logger.info("✅ Loading credentials from default location: credentials.json");
-                        }
+                NetHttpTransport HTTP_TRANSPORT = com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport();
+                
+                // Build authorization code flow
+                GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                        HTTP_TRANSPORT, JSON_FACTORY,
+                        clientId, clientSecret, SCOPES)
+                        .setAccessType("offline")
+                        .build();
+                
+                // Create credential from refresh token
+                com.google.api.client.auth.oauth2.Credential credential = new com.google.api.client.auth.oauth2.Credential.Builder(
+                        com.google.api.client.auth.oauth2.BearerToken.authorizationHeaderAccessMethod())
+                        .setTransport(HTTP_TRANSPORT)
+                        .setJsonFactory(JSON_FACTORY)
+                        .setTokenServerUrl(new com.google.api.client.http.GenericUrl("https://oauth2.googleapis.com/token"))
+                        .setClientAuthentication(new com.google.api.client.http.BasicAuthentication(clientId, clientSecret))
+                        .build();
+                
+                credential.setRefreshToken(token.getRefreshToken());
+                
+                // Refresh the access token if expired or not set
+                if (credential.getAccessToken() == null || 
+                    (token.getExpiresAt() != null && token.getExpiresAt().isBefore(LocalDateTime.now()))) {
+                    credential.refreshToken();
+                    logger.info("✅ Access token refreshed successfully");
+                    
+                    // Save updated token
+                    if (credential.getExpiresInSeconds() != null) {
+                        saveOAuthToken(token.getRefreshToken(), credential.getAccessToken(), credential.getExpiresInSeconds());
                     }
+                } else {
+                    credential.setAccessToken(token.getAccessToken());
+                    logger.info("✅ Using existing access token");
                 }
                 
-                if (credentialsStream == null) {
-                    logger.error("================================================");
-                    logger.error("❌ Google Drive credentials file NOT FOUND!");
-                    logger.error("Please follow these steps:");
-                    logger.error("1. Create Service Account on Google Cloud Console");
-                    logger.error("2. Download JSON key file");
-                    logger.error("3. Rename it to 'credentials.json'");
-                    logger.error("4. Place it in: src/main/resources/credentials.json");
-                    logger.error("   OR: D:\\code\\DigitalLibrary\\demo\\credentials.json");
-                    logger.error("5. Share Google Drive folder with Service Account email");
-                    logger.error("Folder ID: {}", driveFolderId);
-                    logger.error("See file: HUONG_DAN_GOOGLE_DRIVE.md for detailed instructions");
-                    logger.error("================================================");
-                    logger.warn("⚠️ Google Drive integration is DISABLED. Files will be saved locally.");
-                    return null; // Return null to indicate Drive is not available
-                }
-                
-                // Load Service Account credentials
-                logger.info("📝 Loading Google credentials from stream...");
-                GoogleCredentials credentials = GoogleCredentials.fromStream(credentialsStream)
-                        .createScoped(SCOPES);
-                logger.info("✅ Credentials loaded successfully");
-                
-                logger.info("🔧 Building Drive service...");
-                driveService = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, new HttpCredentialsAdapter(credentials))
+                // Build Drive service
+                driveService = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                         .setApplicationName(APPLICATION_NAME)
                         .build();
                 
-                logger.info("✅✅✅ Google Drive service initialized successfully! ✅✅✅");
+                logger.info("✅✅✅ Google Drive service initialized successfully with OAuth 2.0! ✅✅✅");
                 logger.info("📁 Target folder ID: {}", driveFolderId);
             } catch (Exception e) {
                 logger.error("❌❌❌ ERROR initializing Google Drive service: {}", e.getMessage(), e);
@@ -108,13 +177,58 @@ public class GoogleDriveService {
                     logger.error("Cause: {}", e.getCause().getMessage());
                 }
                 throw e;
-            } finally {
-                if (credentialsStream != null) {
-                    credentialsStream.close();
-                }
             }
         }
         return driveService;
+    }
+
+    /**
+     * Get OAuth authorization URL
+     */
+    public String getAuthorizationUrl() throws IOException, GeneralSecurityException {
+        NetHttpTransport HTTP_TRANSPORT = com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport();
+        
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                HTTP_TRANSPORT, JSON_FACTORY,
+                clientId, clientSecret, SCOPES)
+                .setAccessType("offline")
+                .setApprovalPrompt("force")
+                .build();
+        
+        return flow.newAuthorizationUrl().setRedirectUri(redirectUri).build();
+    }
+
+    /**
+     * Exchange authorization code for tokens
+     */
+    public void exchangeCodeForTokens(String code) throws IOException, GeneralSecurityException {
+        NetHttpTransport HTTP_TRANSPORT = com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport();
+        
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                HTTP_TRANSPORT, JSON_FACTORY,
+                clientId, clientSecret, SCOPES)
+                .setAccessType("offline")
+                .setApprovalPrompt("force")
+                .build();
+        
+        GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute();
+        
+        String refreshToken = response.getRefreshToken();
+        String accessToken = response.getAccessToken();
+        Long expiresIn = response.getExpiresInSeconds();
+        
+        if (refreshToken != null) {
+            saveOAuthToken(refreshToken, accessToken, expiresIn);
+            logger.info("✅✅✅ OAuth tokens saved successfully! ✅✅✅");
+            
+            // Reset driveService to force re-initialization with new token
+            driveService = null;
+        } else {
+            logger.warn("⚠️ No refresh token received. Access token may expire soon.");
+            if (accessToken != null) {
+                saveOAuthToken("", accessToken, expiresIn);
+            }
+        }
     }
     
     /**
@@ -137,7 +251,7 @@ public class GoogleDriveService {
                 return true;
             } catch (Exception e) {
                 logger.error("❌ Cannot access folder {}: {}", driveFolderId, e.getMessage());
-                logger.error("⚠️ Make sure the folder is shared with Service Account email");
+                logger.error("⚠️ Make sure OAuth is authorized and folder exists");
                 return false;
             }
         } catch (Exception e) {
@@ -156,7 +270,7 @@ public class GoogleDriveService {
     public String uploadFile(InputStream fileInputStream, String fileName, String mimeType) throws IOException, GeneralSecurityException {
         Drive drive = getDriveService();
         if (drive == null) {
-            throw new IOException("Google Drive service is not available. Please configure credentials.json");
+            throw new IOException("Google Drive service is not available. Please authorize OAuth 2.0 first by visiting /oauth2/authorize");
         }
         
         File fileMetadata = new File();
@@ -209,6 +323,22 @@ public class GoogleDriveService {
             if (e.getDetails() != null) {
                 logger.error("Error details: {}", e.getDetails().toString());
             }
+            
+            // Check for Service Account storage quota error
+            if (e.getStatusCode() == 403 && e.getMessage() != null && 
+                e.getMessage().contains("storageQuotaExceeded")) {
+                logger.error("================================================");
+                logger.error("⚠️ SERVICE ACCOUNT LIMITATION DETECTED!");
+                logger.error("Service Accounts cannot upload files to shared folders.");
+                logger.error("This is a Google Drive API limitation.");
+                logger.error("Solutions:");
+                logger.error("1. Use OAuth 2.0 instead of Service Account");
+                logger.error("2. Use Google Workspace Shared Drives");
+                logger.error("3. Continue using local storage (current fallback)");
+                logger.error("See: SERVICE_ACCOUNT_LIMITATION.md for details");
+                logger.error("================================================");
+            }
+            
             throw new IOException("Failed to upload file to Google Drive: " + e.getMessage(), e);
         } catch (Exception e) {
             logger.error("❌❌❌ Unexpected error during upload! ❌❌❌");
@@ -395,7 +525,7 @@ public class GoogleDriveService {
     public String getDownloadUrl(String fileId) throws IOException, GeneralSecurityException {
         Drive drive = getDriveService();
         if (drive == null) {
-            throw new IOException("Google Drive service is not available. Please configure credentials.json");
+            throw new IOException("Google Drive service is not available. Please authorize OAuth 2.0 first by visiting /oauth2/authorize");
         }
         File file = drive.files().get(fileId).setFields("webContentLink, id, name").execute();
         // Return direct download URL (modify webContentLink to force download)
@@ -415,7 +545,7 @@ public class GoogleDriveService {
     public File getFileMetadata(String fileId) throws IOException, GeneralSecurityException {
         Drive drive = getDriveService();
         if (drive == null) {
-            throw new IOException("Google Drive service is not available. Please configure credentials.json");
+            throw new IOException("Google Drive service is not available. Please authorize OAuth 2.0 first by visiting /oauth2/authorize");
         }
         return drive.files().get(fileId)
                 .setFields("id, name, size, mimeType, webViewLink, webContentLink")
@@ -430,7 +560,7 @@ public class GoogleDriveService {
     public InputStream downloadFile(String fileId) throws IOException, GeneralSecurityException {
         Drive drive = getDriveService();
         if (drive == null) {
-            throw new IOException("Google Drive service is not available. Please configure credentials.json");
+            throw new IOException("Google Drive service is not available. Please authorize OAuth 2.0 first by visiting /oauth2/authorize");
         }
         HttpResponse response = drive.files().get(fileId).executeMedia();
         return response.getContent();
@@ -443,7 +573,7 @@ public class GoogleDriveService {
     public void deleteFile(String fileId) throws IOException, GeneralSecurityException {
         Drive drive = getDriveService();
         if (drive == null) {
-            throw new IOException("Google Drive service is not available. Please configure credentials.json");
+            throw new IOException("Google Drive service is not available. Please authorize OAuth 2.0 first by visiting /oauth2/authorize");
         }
         drive.files().delete(fileId).execute();
         logger.info("File deleted from Google Drive: {}", fileId);

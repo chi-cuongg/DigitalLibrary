@@ -20,10 +20,44 @@ public class AdminController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private com.example.demo.service.GoogleDriveService googleDriveService;
+
     @GetMapping
-    public String dashboard(Model model) {
+    public String dashboard(Model model, @RequestParam(required = false) String success, 
+                           @RequestParam(required = false) String error) {
         model.addAttribute("bookCount", bookService.findAll().size());
         model.addAttribute("userCount", userService.findAll().size());
+        
+        // Check Google Drive status
+        boolean driveAvailable = false;
+        try {
+            driveAvailable = googleDriveService.isDriveAvailable();
+        } catch (Exception e) {
+            // If Drive service is not available, just set to false
+            // This prevents the dashboard from crashing if OAuth is not configured
+            driveAvailable = false;
+        }
+        model.addAttribute("driveAvailable", driveAvailable);
+        
+        // Add success/error messages
+        if (success != null) {
+            if ("oauth_success".equals(success)) {
+                model.addAttribute("successMessage", "✅ Google Drive đã được kết nối thành công!");
+            }
+        }
+        if (error != null) {
+            if ("oauth_error".equals(error)) {
+                model.addAttribute("errorMessage", "❌ Lỗi khi kết nối Google Drive. Vui lòng thử lại.");
+            } else if ("authorization_failed".equals(error)) {
+                model.addAttribute("errorMessage", "❌ Authorization thất bại. Vui lòng thử lại.");
+            } else if ("no_code".equals(error)) {
+                model.addAttribute("errorMessage", "❌ Không nhận được authorization code. Vui lòng thử lại.");
+            } else if ("exchange_failed".equals(error)) {
+                model.addAttribute("errorMessage", "❌ Lỗi khi trao đổi authorization code. Vui lòng thử lại.");
+            }
+        }
+        
         return "admin/dashboard";
     }
 

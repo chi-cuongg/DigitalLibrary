@@ -311,4 +311,33 @@ public class FileStorageService {
             return 0L;
         }
     }
+
+    /**
+     * Delete file from uploads directory
+     * @param fileName The filename to delete
+     * @return true if file was deleted, false if file doesn't exist
+     */
+    public boolean deleteFile(String fileName) {
+        try {
+            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            boolean deleted = Files.deleteIfExists(filePath);
+            if (deleted) {
+                org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(FileStorageService.class);
+                logger.info("File deleted from uploads: {}", fileName);
+            }
+            return deleted;
+        } catch (IOException ex) {
+            org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(FileStorageService.class);
+            logger.error("Error deleting file {}: {}", fileName, ex.getMessage(), ex);
+            return false;
+        }
+    }
+
+    /**
+     * Get the file storage location path
+     * @return Path to the uploads directory
+     */
+    public Path getFileStorageLocation() {
+        return this.fileStorageLocation;
+    }
 }

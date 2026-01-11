@@ -237,8 +237,7 @@
                         <input type="checkbox" 
                                id="downloadFiles" 
                                name="downloadFiles" 
-                               value="true"
-                               checked>
+                               value="true">
                         <label for="downloadFiles" style="margin: 0; font-weight: normal;">
                             <i class="fa-solid fa-download"></i> Tải file sách về máy
                         </label>
@@ -274,16 +273,14 @@
     </div>
 
     <script>
-        // Ensure default value is 1 and downloadFiles is checked
+        // Ensure default value is 1
         document.addEventListener('DOMContentLoaded', function() {
             const maxBooksInput = document.getElementById('maxBooks');
             if (maxBooksInput && (!maxBooksInput.value || maxBooksInput.value === '10')) {
                 maxBooksInput.value = '1';
             }
             
-            // Default: checkbox is checked (both Drive and local)
-            const downloadFilesCheckbox = document.getElementById('downloadFiles');
-            // Keep current state - don't force it
+            // Checkbox defaults to unchecked (only save to Drive, not local)
         });
         
         document.getElementById('crawlerForm').addEventListener('submit', function(e) {
@@ -308,7 +305,7 @@
                 body: new URLSearchParams({
                     url: url,
                     maxBooks: maxBooks,
-                    downloadFiles: downloadFiles
+                    downloadFiles: downloadFiles ? 'true' : 'false'
                 })
             })
             .then(response => response.json())
