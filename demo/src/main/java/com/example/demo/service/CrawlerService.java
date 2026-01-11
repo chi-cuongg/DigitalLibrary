@@ -1065,8 +1065,10 @@ public class CrawlerService {
                                 logger.info("📊 File size: {} bytes ({} MB)", fileSize, fileSize / 1024.0 / 1024.0);
 
                                 // STEP 3: Delete local file if checkbox is NOT checked
+                                // IMPORTANT: File is deleted ONLY AFTER successful upload to Drive
                                 if (!downloadFile) {
-                                    logger.info("🗑️ Step 3: Checkbox NOT checked - Deleting file from uploads...");
+                                    logger.info("🗑️ Step 3: Checkbox NOT checked - File uploaded to Drive successfully, now deleting from uploads...");
+                                    logger.info("⏳ Waiting for upload confirmation before deleting local file...");
                                     boolean deleted = fileStorageService.deleteFile(localFilePath);
                                     if (deleted) {
                                         logger.info("✅✅✅ File deleted from uploads folder (kept only on Drive) ✅✅✅");

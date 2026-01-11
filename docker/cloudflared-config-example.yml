@@ -1,0 +1,18 @@
+# File cấu hình Cloudflare Tunnel
+# Copy file này vào /root/.cloudflared/config.yml
+# Thay your-domain.com bằng domain thực tế của bạn
+
+tunnel: ea0c511c-5d3f-4114-93d3-afc3ab621052
+credentials-file: /root/.cloudflared/ea0c511c-5d3f-4114-93d3-afc3ab621052.json
+
+ingress:
+  # Route domain chính đến Spring Boot app
+  - hostname: your-domain.com
+    service: http://localhost:8080
+  
+  # Route www subdomain (nếu có)
+  - hostname: www.your-domain.com
+    service: http://localhost:8080
+  
+  # Catch-all rule (PHẢI đặt cuối cùng)
+  - service: http_status:404

@@ -1,0 +1,9 @@
+tunnel: ea0c511c-5d3f-4114-93d3-afc3ab621052
+credentials-file: /root/.cloudflared/ea0c511c-5d3f-4114-93d3-afc3ab621052.json
+
+ingress:
+  - hostname: digilibrary.online
+    service: http://localhost:8080
+  - hostname: www.digilibrary.online
+    service: http://localhost:8080
+  - service: http_status:404
