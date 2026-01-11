@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title>Thêm/Sửa Sách</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="admin-card" style="max-width: 800px; margin: 0 auto;">
+            <div class="card-header">
+                <h2 class="card-title" th:text="${book.id == null ? 'Thêm Sách mới' : 'Cập nhật Sách'}">Form Sách</h2>
+                <a href="/admin/books" style="font-size: 0.875rem; color: #64748b; text-decoration: none;">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+
+            <form th:action="@{/admin/books/save}" th:object="${book}" method="post" enctype="multipart/form-data"
+                class="admin-card">
+                <input type="hidden" th:field="*{id}">
+
+                <div class="admin-form-group">
+                    <label class="admin-label">Tên sách</label>
+                    <input type="text" th:field="*{title}" class="admin-input" placeholder="Nhập tên sách..." required>
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label">Tác giả</label>
+                    <input type="text" th:field="*{author}" class="admin-input" placeholder="Nhập tên tác giả...">
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label">Mô tả</label>
+                    <textarea th:field="*{description}" class="admin-textarea" rows="4"
+                        placeholder="Mô tả nội dung sách..."></textarea>
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label">URL Ảnh bìa</label>
+                    <input type="text" th:field="*{imageUrl}" class="admin-input" placeholder="/images/...">
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label">File Sách (PDF/EPUB)</label>
+                    <input type="file" name="file" class="admin-input">
+                    <p th:if="${book.files != null and !book.files.empty}"
+                        style="margin-top: 0.5rem; font-size: 0.85rem; color: #64748b;">
+                        File hiện tại: <span th:text="${book.files[0].fileName}">filename.pdf</span>
+                    </p>
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label"
+                        style="display: flex; justify-content: space-between; align-items: center;">
+                        Danh mục
+                        <button type="button" onclick="toggleQuickAdd()"
+                            style="background: none; border: none; color: var(--admin-primary); cursor: pointer; font-size: 0.85rem; font-weight: 600;">
+                            <i class="fa-solid fa-plus"></i> Thêm nhanh
+                        </button>
+                    </label>
+
+                    <div id="quickAddContainer" style="display: none; margin-bottom: 0.5rem; gap: 0.5rem;">
+                        <input type="text" id="newCategoryName" class="admin-input" placeholder="Tên danh mục mới"
+                            style="padding: 0.4rem;">
+                        <button type="button" onclick="submitQuickCategory()" class="btn-admin btn-admin-primary"
+                            style="padding: 0.4rem 0.8rem;">Lưu</button>
+                    </div>
+
+                    <select id="categorySelect" name="categoryIds" class="admin-select" multiple style="height: 150px;">
+                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"
+                            th:selected="${book.categories.contains(cat)}">
+                        </option>
+                    </select>
+                    <small style="color: #64748b; font-size: 0.85rem; margin-top: 0.5rem; display: block;">Giữ phím Ctrl
+                        (hoặc Cmd) để chọn nhiều danh mục.</small>
+                </div>
+
+                <script>
+                    function toggleQuickAdd() {
+                        const container = document.getElementById('quickAddContainer');
+                        container.style.display = container.style.display === 'none' ? 'flex' : 'none';
+                        if (container.style.display === 'flex') {
+                            document.getElementById('newCategoryName').focus();
+                        }
+                    }
+
+                    function submitQuickCategory() {
+                        const nameInput = document.getElementById('newCategoryName');
+                        const name = nameInput.value;
+                        if (!name) return;
+
+                        fetch('/admin/categories/api/add?name=' + encodeURIComponent(name), {
+                            method: 'POST'
+                        })
+                            .then(response => {
+                                if (!response.ok) throw new Error('Network response was not ok');
+                                return response.json();
+                            })
+                            .then(category => {
+                                // Add to select
+                                const select = document.getElementById('categorySelect');
+                                const option = document.createElement('option');
+                                option.value = category.id;
+                                option.text = category.name;
+                                option.selected = true; // Auto select new category
+                                select.appendChild(option);
+
+                                // Reset UI
+                                nameInput.value = '';
+                                toggleQuickAdd();
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Có lỗi xảy ra khi thêm danh mục.');
+                            });
+                    }
+                </script>
+
+                <div class="form-actions">
+                    <a href="/admin/books" style="color: #64748b; text-decoration: none; font-weight: 500;">Hủy bỏ</a>
+                    <button type="submit" class="btn-admin btn-admin-primary">Lưu lại</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

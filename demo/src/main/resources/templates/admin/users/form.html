@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title>Thêm/Sửa Người dùng</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="admin-card" style="max-width: 800px; margin: 0 auto;">
+            <div class="card-header">
+                <h2 class="card-title" th:text="${user.id == null ? 'Thêm Người dùng' : 'Cập nhật Người dùng'}">Form
+                    User</h2>
+                <a href="/admin/users" style="font-size: 0.875rem; color: #64748b; text-decoration: none;">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+
+            <form th:action="@{/admin/users/save}" th:object="${user}" method="post">
+                <input type="hidden" th:field="*{id}" />
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="admin-form-group">
+                        <label class="admin-label">Username</label>
+                        <input type="text" th:field="*{username}" class="admin-input" required
+                            placeholder="Tên đăng nhập">
+                    </div>
+
+                    <div class="admin-form-group">
+                        <label class="admin-label">Mật khẩu</label>
+                        <input type="password" th:field="*{password}" class="admin-input" required
+                            placeholder="********">
+                    </div>
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label">Email</label>
+                    <input type="email" th:field="*{email}" class="admin-input" placeholder="email@example.com">
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label">Họ tên</label>
+                    <input type="text" th:field="*{fullName}" class="admin-input" placeholder="Họ và tên đầy đủ">
+                </div>
+
+                <div class="admin-form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" th:field="*{enabled}" style="width: 1.25rem; height: 1.25rem;">
+                        <span class="admin-label" style="margin: 0;">Kích hoạt tài khoản</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <a href="/admin/users" class="btn-admin" style="color: #64748b;">Hủy bỏ</a>
+                    <button type="submit" class="btn-admin btn-admin-primary">
+                        <i class="fa-solid fa-save"></i> Lưu lại
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

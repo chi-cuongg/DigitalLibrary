@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Define property for log directory -->
+    <property name="LOG_DIR" value="logs" />
+    <property name="LOG_FILE" value="application" />
+    
+    <!-- File appender - ghi tất cả logs vào file -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${LOG_FILE}.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Daily rollover -->
+            <fileNamePattern>${LOG_DIR}/${LOG_FILE}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- Keep 30 days of logs -->
+            <maxHistory>30</maxHistory>
+            <!-- Total size cap -->
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- File appender riêng cho Google Drive Service -->
+    <appender name="GOOGLE_DRIVE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/google-drive.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/google-drive-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- File appender riêng cho Crawler Service -->
+    <appender name="CRAWLER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/crawler.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/crawler-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Logger riêng cho Google Drive Service -->
+    <logger name="com.example.demo.service.GoogleDriveService" level="INFO" additivity="false">
+        <appender-ref ref="GOOGLE_DRIVE_FILE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <!-- Logger riêng cho Crawler Service -->
+    <logger name="com.example.demo.service.CrawlerService" level="INFO" additivity="false">
+        <appender-ref ref="CRAWLER_FILE" />
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <!-- Root logger - CHỈ ghi vào file, KHÔNG log ra console -->
+    <root level="INFO">
+        <appender-ref ref="FILE" />
+    </root>
+    
+    <!-- Spring Framework - giảm log level để giảm noise -->
+    <logger name="org.springframework" level="WARN" />
+    <logger name="org.hibernate" level="WARN" />
+    <logger name="com.zaxxer.hikari" level="WARN" />
+    <logger name="org.apache.catalina" level="WARN" />
+    <logger name="org.apache.tomcat" level="WARN" />
+    
+</configuration>

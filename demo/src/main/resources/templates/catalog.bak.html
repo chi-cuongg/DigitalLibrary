@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kho sách | THCS Việt Xuân</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+
+<body>
+
+    <header>
+        <a href="/" class="logo">THCS Việt Xuân</a>
+        <nav>
+            <ul>
+                <li><a href="/">Trang chủ</a></li>
+                <!-- Dropdown for Categories -->
+                <li class="dropdown">
+                    <a href="#" style="cursor: pointer;">Danh mục <i class="fa-solid fa-caret-down"></i></a>
+                    <div class="dropdown-content">
+                        <a href="/catalog">Tất cả sách</a>
+                        <a th:each="cat : ${categories}" th:href="@{/catalog(categoryId=${cat.id})}"
+                            th:text="${cat.name}">Category Name</a>
+                    </div>
+                </li>
+                <li><a href="/#features">Tính năng</a></li>
+                <li><a href="/#contact">Liên hệ</a></li>
+
+                <!-- Admin Dashboard only for Admins -->
+                <li th:if="${session.user != null and session.user.isAdmin()}"><a href="/admin">Admin Dashboard</a></li>
+
+                <li th:if="${session.user == null}"><a th:href="@{/login}" class="btn-primary"
+                        style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Đăng nhập</a></li>
+                <li th:if="${session.user != null}">
+                    <span style="color: var(--text-color); margin-left: 10px;">Xin chào, <span
+                            th:text="${session.user.fullName}">User</span></span>
+                    <a th:href="@{/logout}"
+                        style="margin-left: 10px; color: var(--accent-color); font-size: 0.9rem;">(Đăng xuất)</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="container" style="display: flex; gap: 2rem; padding: 2rem 0; max-width: 1200px; margin: 0 auto;">
+
+        <!-- Sidebar -->
+        <aside style="width: 250px; flex-shrink: 0;">
+            <!-- Search -->
+            <div class="search-box" style="margin-bottom: 2rem;">
+                <h3>Tìm kiếm</h3>
+                <form action="/catalog" method="get">
+                    <input type="text" name="keyword" placeholder="Tên sách..." th:value="${currentKeyword}"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 0.5rem;">
+                    <button type="submit" class="btn-primary" style="width: 100%;">Tìm kiếm</button>
+                </form>
+            </div>
+
+            <!-- Categories -->
+            <div class="categories-box">
+                <h3>Danh mục</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 0.5rem;">
+                        <a href="/catalog" th:class="${currentCategoryId == null ? 'active-cat' : ''}"
+                            style="text-decoration: none; color: var(--text-color); display: block; padding: 5px 0;">
+                            Tất cả sách
+                        </a>
+                    </li>
+                    <li th:each="cat : ${categories}" style="margin-bottom: 0.5rem;">
+                        <a th:href="@{/catalog(categoryId=${cat.id})}"
+                            th:class="${currentCategoryId == cat.id ? 'active-cat' : ''}" th:text="${cat.name}"
+                            style="text-decoration: none; color: var(--text-color); display: block; padding: 5px 0;">
+                            Java
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Book Grid -->
+        <main style="flex-grow: 1;">
+            <h2 style="margin-bottom: 1.5rem;"
+                th:text="${currentKeyword != null ? 'Kết quả tìm kiếm: ' + currentKeyword : 'Danh sách Sách'}">Danh sách
+                Sách</h2>
+
+            <div class="book-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+                <div th:each="book : ${books}" class="book-card"
+                    style="background: var(--card-bg); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    <a th:href="@{'/books/' + ${book.id}}"
+                        style="text-decoration: none; color: inherit; display: block;">
+                        <div
+                            style="height: 250px; overflow: hidden; background: #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                            <img th:if="${book.imageUrl != null && !book.imageUrl.isEmpty()}" th:src="${book.imageUrl}"
+                                alt="Book Cover" style="width: 100%; height: 100%; object-fit: cover;">
+                            <i th:unless="${book.imageUrl != null && !book.imageUrl.isEmpty()}" class="fa-solid fa-book"
+                                style="font-size: 3rem; color: #cbd5e1;"></i>
+                        </div>
+                        <div class="book-info" style="padding: 1rem;">
+                            <h4 th:text="${book.title}" style="margin: 0 0 0.5rem 0; font-size: 1rem; color: #ffffff;">
+                                Tiêu
+                                đề sách
+                            </h4>
+                            <p th:text="${book.author}" style="margin: 0; font-size: 0.875rem; color: #64748b;">Tác giả
+                            </p>
+                        </div>
+                    </a>
+                </div>
+
+                <div th:if="${books.isEmpty()}"
+                    style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #64748b;">
+                    Không tìm thấy sách nào phù hợp.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 THCS Việt Xuân. Bảo lưu mọi quyền.</p>
+    </footer>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+
+</html>

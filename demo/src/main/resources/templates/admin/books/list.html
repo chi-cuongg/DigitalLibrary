@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title>Quản lý Sách</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="admin-card">
+            <div class="card-header">
+                <h2 class="card-title">Danh sách Sách</h2>
+                <a href="/admin/books/add" class="btn-admin btn-admin-primary">
+                    <i class="fa-solid fa-plus"></i> Thêm Sách mới
+                </a>
+            </div>
+
+            <!-- Search Form -->
+            <form method="GET" action="/admin/books" class="search-form" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+                <div style="flex: 1; position: relative;">
+                    <input type="text" 
+                           name="keyword" 
+                           th:value="${keyword}"
+                           placeholder="Tìm kiếm theo tên sách, tác giả..." 
+                           class="admin-input"
+                           style="padding-left: 2.5rem;">
+                    <i class="fa-solid fa-search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
+                </div>
+                <input type="hidden" name="page" value="0">
+                <input type="hidden" name="size" th:value="${pageSize}">
+                <button type="submit" class="btn-admin btn-admin-primary">
+                    <i class="fa-solid fa-search"></i> Tìm kiếm
+                </button>
+                <a th:href="@{/admin/books(page=0, size=${pageSize})}" class="btn-admin btn-admin-edit" th:if="${keyword != null and !keyword.isEmpty()}">
+                    <i class="fa-solid fa-times"></i> Xóa bộ lọc
+                </a>
+            </form>
+
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Hình ảnh</th>
+                            <th>ID</th>
+                            <th>Tên sách</th>
+                            <th>Tác giả</th>
+                            <th style="width: 150px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="book : ${books}">
+                            <td>
+                                <img th:src="${book.imageUrl != null and !book.imageUrl.isEmpty() ? book.imageUrl : 'https://via.placeholder.com/60x90?text=No+Image'}" 
+                                     alt="Book Cover" 
+                                     style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            </td>
+                            <td>#<span th:text="${book.id}"></span></td>
+                            <td>
+                                <div style="font-weight: 600;" th:text="${book.title}"></div>
+                                <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem;">
+                                    <span th:if="${book.categories != null and !book.categories.isEmpty()}">
+                                        <span th:each="cat : ${book.categories}" th:text="${cat.name}"></span>
+                                    </span>
+                                    <span th:if="${book.categories == null or book.categories.isEmpty()}">Chưa phân loại</span>
+                                </div>
+                            </td>
+                            <td th:text="${book.author}"></td>
+                            <td>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <a th:href="@{/admin/books/edit/{id}(id=${book.id})}"
+                                        class="btn-admin btn-admin-edit">
+                                        <i class="fa-solid fa-pen"></i> Sửa
+                                    </a>
+                                    <a th:href="@{/admin/books/delete/{id}(id=${book.id})}"
+                                        class="btn-admin btn-admin-danger"
+                                        onclick="return confirm('Bạn có chắc muốn xóa?');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${keyword != null and !keyword.isEmpty() and #lists.isEmpty(books)}">
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
+                                Không tìm thấy cuốn sách nào với từ khóa "<span th:text="${keyword}"></span>"
+                            </td>
+                        </tr>
+                        <tr th:if="${(keyword == null or keyword.isEmpty()) and #lists.isEmpty(books)}">
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">Chưa có cuốn sách
+                                nào.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-container" th:if="${totalPages != null}">
+                <div class="pagination-info">
+                    <span th:if="${keyword != null and !keyword.isEmpty()}">
+                        Tìm thấy <span th:text="${totalItems}">0</span> cuốn sách với từ khóa "<span th:text="${keyword}"></span>"
+                    </span>
+                    <span th:unless="${keyword != null and !keyword.isEmpty()}">
+                        Hiển thị <span th:text="${currentPage * pageSize + 1}">1</span> - 
+                        <span th:text="${(currentPage + 1) * pageSize > totalItems ? totalItems : (currentPage + 1) * pageSize}">10</span> 
+                        trong tổng số <span th:text="${totalItems}">0</span> cuốn sách
+                    </span>
+                </div>
+                <ul class="pagination">
+                    <li class="pagination-item">
+                        <a th:href="@{/admin/books(page=${currentPage - 1}, size=${pageSize}, keyword=${keyword})}" 
+                           class="pagination-link"
+                           th:classappend="${currentPage == 0} ? 'disabled'"
+                           th:if="${currentPage > 0}">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                        <span class="pagination-link disabled" th:if="${currentPage == 0}">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </span>
+                    </li>
+                    <!-- Show pages intelligently -->
+                    <th:block th:if="${totalPages <= 7}">
+                        <!-- Show all pages if total <= 7 -->
+                        <li class="pagination-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                            <a th:href="@{/admin/books(page=${i}, size=${pageSize}, keyword=${keyword})}" 
+                               class="pagination-link"
+                               th:classappend="${i == currentPage} ? 'active'"
+                               th:text="${i + 1}">1</a>
+                        </li>
+                    </th:block>
+                    <th:block th:if="${totalPages > 7}">
+                        <!-- First page -->
+                        <li class="pagination-item" th:if="${currentPage > 2}">
+                            <a th:href="@{/admin/books(page=0, size=${pageSize}, keyword=${keyword})}" 
+                               class="pagination-link">1</a>
+                        </li>
+                        <li class="pagination-item" th:if="${currentPage > 3}">
+                            <span class="pagination-link disabled">...</span>
+                        </li>
+                        <!-- Pages around current -->
+                        <li class="pagination-item" 
+                            th:each="i : ${#numbers.sequence(T(java.lang.Math).max(0, currentPage - 1), T(java.lang.Math).min(totalPages - 1, currentPage + 1))}">
+                            <a th:href="@{/admin/books(page=${i}, size=${pageSize}, keyword=${keyword})}" 
+                               class="pagination-link"
+                               th:classappend="${i == currentPage} ? 'active'"
+                               th:text="${i + 1}">1</a>
+                        </li>
+                        <!-- Last page -->
+                        <li class="pagination-item" th:if="${currentPage < totalPages - 3}">
+                            <span class="pagination-link disabled">...</span>
+                        </li>
+                        <li class="pagination-item" th:if="${currentPage < totalPages - 2}">
+                            <a th:href="@{/admin/books(page=${totalPages - 1}, size=${pageSize}, keyword=${keyword})}" 
+                               class="pagination-link" th:text="${totalPages}">1</a>
+                        </li>
+                    </th:block>
+                    <li class="pagination-item">
+                        <a th:href="@{/admin/books(page=${currentPage + 1}, size=${pageSize}, keyword=${keyword})}" 
+                           class="pagination-link"
+                           th:classappend="${currentPage >= totalPages - 1} ? 'disabled'"
+                           th:if="${currentPage < totalPages - 1}">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                        <span class="pagination-link disabled" th:if="${currentPage >= totalPages - 1}">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THCS Việt Xuân | Thư viện Số</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+
+<body>
+
+    <header>
+        <a href="/" class="logo">THCS Việt Xuân</a>
+        <nav>
+            <ul>
+                <li><a href="/">Trang chủ</a></li>
+                <!-- Dropdown for Categories -->
+                <li class="dropdown">
+                    <a href="#" style="cursor: pointer;">Danh mục <i class="fa-solid fa-caret-down"></i></a>
+                    <div class="dropdown-content">
+                        <a href="/catalog">Tất cả sách</a>
+                        <a th:each="cat : ${categories}" th:href="@{/catalog(categoryId=${cat.id})}"
+                            th:text="${cat.name}">Category Name</a>
+                    </div>
+                </li>
+                <li><a href="#features">Tính năng</a></li>
+                <li><a href="#contact">Liên hệ</a></li>
+
+                <!-- Admin Dashboard only for Admins -->
+                <li th:if="${session.user != null and session.user.isAdmin()}"><a href="/admin">Admin Dashboard</a></li>
+
+                <li th:if="${session.user == null}"><a th:href="@{/login}" class="btn-primary"
+                        style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Đăng nhập</a></li>
+                <li th:if="${session.user != null}">
+                    <span style="color: var(--text-color); margin-left: 10px;">Xin chào, <span
+                            th:text="${session.user.fullName}">User</span></span>
+                    <a th:href="@{/logout}"
+                        style="margin-left: 10px; color: var(--accent-color); font-size: 0.9rem;">(Đăng xuất)</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <h1>Thư viện Số Trường THCS Việt Xuân</h1>
+        <p>Chào mừng các em học sinh và thầy cô. Khám phá kho tàng tri thức vô tận.</p>
+        <a href="/catalog" class="btn-primary">Khám phá Kho sách</a>
+    </section>
+
+    <section id="features" class="features">
+        <div class="feature-card">
+            <h3>Truy cập Tức thì</h3>
+            <p>Đọc mọi lúc, mọi nơi. Không chờ đợi, không phí trễ hạn.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Tìm kiếm Thông minh</h3>
+            <p>Tìm chính xác những gì bạn cần.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Cộng đồng</h3>
+            <p>Tham gia câu lạc bộ sách, thảo luận và chia sẻ những cuốn sách yêu thích.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 THCS Việt Xuân. Bảo lưu mọi quyền.</p>
+    </footer>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+
+</html>

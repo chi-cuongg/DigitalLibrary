@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${book.title} + ' - THCS Việt Xuân'">Chi tiết sách</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .book-details-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 3rem;
+        }
+
+        .book-cover-large {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .book-info h1 {
+            font-size: 2.5rem;
+            color: #f8fafc;
+            margin-bottom: 0.5rem;
+        }
+
+        .book-meta {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .book-meta span {
+            margin-right: 1.5rem;
+        }
+
+        .book-meta i {
+            margin-right: 0.5rem;
+            color: #FFC107;
+        }
+
+        .book-description {
+            color: #cbd5e1;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .download-section {
+            margin-top: 2rem;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: #FFC107;
+            color: #0f172a;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+            background: #ffcd38;
+        }
+
+        .category-tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            margin-right: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .book-details-container {
+                grid-template-columns: 1fr;
+            }
+
+            .book-cover-large {
+                max-width: 300px;
+                margin: 0 auto;
+                display: block;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <a href="/" class="logo">THCS Việt Xuân</a>
+        <nav>
+            <ul>
+                <li><a href="/">Trang chủ</a></li>
+                <!-- Dropdown for Categories -->
+                <li class="dropdown">
+                    <a href="#" style="cursor: pointer;">Danh mục <i class="fa-solid fa-caret-down"></i></a>
+                    <div class="dropdown-content">
+                        <a href="/catalog">Tất cả sách</a>
+                        <a th:each="cat : ${categories}" th:href="@{/catalog(categoryId=${cat.id})}"
+                            th:text="${cat.name}">Category Name</a>
+                    </div>
+                </li>
+                <li><a href="/#features">Tính năng</a></li>
+                <li><a href="/#contact">Liên hệ</a></li>
+
+                <!-- Admin Dashboard only for Admins -->
+                <li th:if="${session.user != null and session.user.isAdmin()}"><a href="/admin">Admin Dashboard</a></li>
+
+                <li th:if="${session.user == null}"><a th:href="@{/login}" class="btn-primary"
+                        style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Đăng nhập</a></li>
+                <li th:if="${session.user != null}">
+                    <span style="color: var(--text-color); margin-left: 10px;">Xin chào, <span
+                            th:text="${session.user.fullName}">User</span></span>
+                    <a th:href="@{/logout}"
+                        style="margin-left: 10px; color: var(--accent-color); font-size: 0.9rem;">(Đăng xuất)</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="book-details-container">
+        <!-- Left: Cover Image -->
+        <div>
+            <img th:src="${book.imageUrl != null && !book.imageUrl.isEmpty() ? book.imageUrl : 'https://via.placeholder.com/300x450'}"
+                alt="Book Cover" class="book-cover-large">
+        </div>
+
+        <!-- Right: Book Info -->
+        <div class="book-info">
+            <h1 th:text="${book.title}">Tên sách</h1>
+
+            <div class="book-meta">
+                <span><i class="fas fa-user-pen"></i> <span th:text="${book.author}">Tác giả</span></span>
+                <span><i class="far fa-calendar-alt"></i> <span
+                        th:text="${#temporals.format(book.createdAt, 'dd/MM/yyyy')}">2024</span></span>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <span th:each="cat : ${book.categories}" class="category-tag" th:text="${cat.name}">Novel</span>
+            </div>
+
+            <div class="book-description">
+                <h3 style="color: #fff; margin-bottom: 0.5rem;">Mô tả</h3>
+                <div id="descContent" class="description-content">
+                    <p th:text="${book.description}" style="margin: 0; white-space: pre-wrap;">Nội dung mô tả sách...
+                    </p>
+                </div>
+                <button id="readMoreBtn" onclick="toggleDescription()" class="read-more-btn" style="display: none;">Xem
+                    thêm</button>
+            </div>
+
+            <script>
+                function toggleDescription() {
+                    const content = document.getElementById('descContent');
+                    const btn = document.getElementById('readMoreBtn');
+
+                    if (content.classList.contains('expanded')) {
+                        content.classList.remove('expanded');
+                        btn.innerHTML = 'Xem thêm <i class="fas fa-chevron-down"></i>';
+                    } else {
+                        content.classList.add('expanded');
+                        btn.innerHTML = 'Thu gọn <i class="fas fa-chevron-up"></i>';
+                    }
+                }
+
+                document.addEventListener("DOMContentLoaded", function () {
+                    const content = document.getElementById('descContent');
+                    const btn = document.getElementById('readMoreBtn');
+                    // Check if content spans more than the max-height (approx 150px)
+                    if (content.scrollHeight > 160) {
+                        btn.style.display = 'inline-block';
+                        btn.innerHTML = 'Xem thêm <i class="fas fa-chevron-down"></i>';
+                    }
+                });
+            </script>
+
+            <style>
+                .description-content {
+                    max-height: 150px;
+                    overflow: hidden;
+                    transition: max-height 0.3s ease-out;
+                    position: relative;
+                }
+
+                .description-content.expanded {
+                    max-height: none;
+                    transition: max-height 0.5s ease-in;
+                }
+
+                .description-content::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 50px;
+                    background: linear-gradient(transparent, rgba(30, 41, 59, 1));
+                    /* Matches background color of .book-description container or slightly darker */
+                    pointer-events: none;
+                    opacity: 1;
+                    transition: opacity 0.3s;
+                }
+
+                .description-content.expanded::after {
+                    opacity: 0;
+                }
+
+                .read-more-btn {
+                    background: none;
+                    border: none;
+                    color: #FFC107;
+                    cursor: pointer;
+                    font-weight: 600;
+                    padding: 0;
+                    margin-top: 1rem;
+                    font-size: 0.95rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    transition: color 0.2s;
+                }
+
+                .read-more-btn:hover {
+                    color: #ffca2c;
+                }
+            </style>
+
+            <div class="download-section">
+                <!-- If files exist -->
+                <div th:if="${book.files != null and !book.files.empty}">
+                    <div th:each="file : ${book.files}">
+                        <a th:href="@{'/books/download/' + ${file.id}}" class="download-btn">
+                            <i class="fas fa-download"></i>
+                            <span>Tải xuống (PDF)</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- If no files -->
+                <div th:if="${book.files == null or book.files.empty}">
+                    <button class="download-btn" style="background: #475569; cursor: not-allowed; opacity: 0.7;">
+                        <i class="fas fa-slash"></i> Chưa có file tải xuống
+                    </button>
+                </div>
+            </div>
+
+            <!-- Review Section -->
+            <div class="reviews-section" style="margin-top: 3rem;">
+                <h3
+                    style="color: #fff; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                    Đánh giá & Bình luận
+                </h3>
+
+                <!-- Review Stats -->
+                <div class="review-stats" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-size: 2.5rem; font-weight: bold; color: #FFC107;"
+                        th:text="${#aggregates.avg(book.reviews.![rating]) ?: '0.0'} % 1 == 0 ? ${#aggregates.avg(book.reviews.![rating]) ?: 0} : ${#numbers.formatDecimal(#aggregates.avg(book.reviews.![rating]) ?: 0, 1, 1)}">4.5</span>
+                    <div>
+                        <div style="color: #FFC107; font-size: 1.2rem;">
+                            <i th:each="i : ${#numbers.sequence(1, 5)}"
+                                th:class="${i <= (#aggregates.avg(book.reviews.![rating]) ?: 0) ? 'fas fa-star' : 'far fa-star'}"></i>
+                        </div>
+                        <div style="color: #94a3b8; font-size: 0.9rem;" th:text="${book.reviews.size()} + ' đánh giá'">
+                            100 đánh giá</div>
+                    </div>
+                </div>
+
+                <!-- Review Form -->
+                <div th:if="${session.user != null}" class="review-form-container"
+                    style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
+                    <h4 style="color: #fff; margin-bottom: 1rem;"
+                        th:text="${userReview != null ? 'Cập nhật đánh giá của bạn' : 'Viết đánh giá của bạn'}">Viết
+                        đánh giá của bạn</h4>
+                    <form th:action="@{/books/{id}/review(id=${book.id})}" method="post">
+                        <div class="rating-input" style="margin-bottom: 1rem;">
+                            <div class="star-rating">
+                                <input type="radio" id="start5" name="rating" value="5"
+                                    th:checked="${userReview != null && userReview.rating == 5} or ${userReview == null}" /><label
+                                    for="start5" title="5 sao"></label>
+                                <input type="radio" id="start4" name="rating" value="4"
+                                    th:checked="${userReview != null && userReview.rating == 4}" /><label for="start4"
+                                    title="4 sao"></label>
+                                <input type="radio" id="start3" name="rating" value="3"
+                                    th:checked="${userReview != null && userReview.rating == 3}" /><label for="start3"
+                                    title="3 sao"></label>
+                                <input type="radio" id="start2" name="rating" value="2"
+                                    th:checked="${userReview != null && userReview.rating == 2}" /><label for="start2"
+                                    title="2 sao"></label>
+                                <input type="radio" id="start1" name="rating" value="1"
+                                    th:checked="${userReview != null && userReview.rating == 1}" /><label for="start1"
+                                    title="1 sao"></label>
+                            </div>
+                        </div>
+                        <textarea name="content" rows="3" class="admin-textarea"
+                            placeholder="Chia sẻ suy nghĩ của bạn về cuốn sách này..." required
+                            style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 1rem;"
+                            th:text="${userReview != null ? userReview.comment : ''}"></textarea>
+                        <button type="submit" class="btn-primary" style="padding: 0.5rem 1.5rem;"
+                            th:text="${userReview != null ? 'Cập nhật' : 'Gửi đánh giá'}">Gửi đánh giá</button>
+                    </form>
+                </div>
+                <div th:if="${session.user == null}" style="margin-bottom: 2rem; color: #94a3b8;">
+                    <a href="/login" style="color: #FFC107;">Đăng nhập</a> để viết đánh giá.
+                </div>
+
+                <!-- Reviews List -->
+                <div class="reviews-list">
+                    <div th:each="review : ${book.reviews}" class="review-item"
+                        style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 1.5rem 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <div>
+                                <strong style="color: #fff;" th:text="${review.user.fullName}">User Name</strong>
+                                <span style="color: #64748b; font-size: 0.85rem; margin-left: 0.5rem;"
+                                    th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy')}">01/01/2024</span>
+                            </div>
+                            <div style="color: #FFC107; font-size: 0.9rem;">
+                                <i th:each="i : ${#numbers.sequence(1, 5)}"
+                                    th:class="${i <= review.rating ? 'fas fa-star' : 'far fa-star'}"></i>
+                            </div>
+                        </div>
+                        <p style="color: #cbd5e1; margin: 0; line-height: 1.6;" th:text="${review.comment}">Review
+                            content...</p>
+                    </div>
+                    <div th:if="${book.reviews.empty}" style="padding: 2rem; text-align: center; color: #64748b;">
+                        Chưa có đánh giá nào. Hãy là người đầu tiên!
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <a href="/catalog"
+                    style="color: #94a3b8; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-arrow-left"></i> Quay lại kho sách
+                </a>
+            </div>
+
+            <style>
+                /* Star Rating CSS */
+                .star-rating {
+                    direction: rtl;
+                    display: inline-flex;
+                }
+
+                .star-rating input {
+                    display: none;
+                }
+
+                .star-rating label {
+                    color: #475569;
+                    font-size: 1.5rem;
+                    padding: 0 0.1rem;
+                    cursor: pointer;
+                    transition: color 0.2s;
+                }
+
+                .star-rating label:before {
+                    content: "\f005";
+                    /* FontAwesome Star */
+                    font-family: "Font Awesome 6 Free";
+                    font-weight: 900;
+                }
+
+                .star-rating label:hover,
+                .star-rating label:hover~label,
+                .star-rating input:checked~label {
+                    color: #FFC107;
+                }
+            </style>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng ký | THCS Việt Xuân</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css?v=2}">
+    <style>
+        .register-page {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(rgba(13, 27, 42, 0.8), rgba(13, 27, 42, 0.9)), url('/images/hero-library.png');
+            background-size: cover;
+            background-position: center;
+            padding: 2rem;
+        }
+
+        .auth-container {
+            background-color: rgba(27, 38, 59, 0.95);
+            padding: 2.5rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .auth-logo {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.75rem;
+            color: #ffc107;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .auth-title {
+            color: #fff;
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #e0e1dd;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(13, 27, 42, 0.5);
+            color: #fff;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #ffc107;
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+        }
+
+        .btn-auth {
+            width: 100%;
+            padding: 0.85rem;
+            background-color: #ffc107;
+            color: #0d1b2a;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            background-color: #ffca2c;
+        }
+
+        .auth-footer {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #b0c4de;
+        }
+
+        .auth-footer a {
+            color: #ffc107;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .alert-error {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body class="register-page">
+    <div class="auth-container">
+        <a href="/" class="auth-logo">THCS Việt Xuân</a>
+        <h2 class="auth-title">Đăng ký tài khoản</h2>
+
+        <div th:if="${error}" class="alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i> <span th:text="${error}">Error message</span>
+        </div>
+
+        <form action="/register" method="post">
+            <div class="form-group">
+                <label for="fullName">Họ và tên</label>
+                <input type="text" id="fullName" name="fullName" required placeholder="Nhập họ tên của bạn">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="name@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Xác nhận mật khẩu</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn-auth">Đăng ký</button>
+        </form>
+
+        <div class="auth-footer">
+            Đã có tài khoản? <a href="/login">Đăng nhập ngay</a>
+        </div>
+    </div>
+</body>
+
+</html>

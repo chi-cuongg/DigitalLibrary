@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | Thư viện Số</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+
+<body class="login-page">
+
+    <div class="login-container">
+        <a href="/" class="login-logo">THCS Việt Xuân</a>
+        <h2>Đăng nhập</h2>
+        <form action="#" method="post">
+            <div th:if="${error}" style="color: red; margin-bottom: 1rem; text-align: center;" th:text="${error}"></div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="nhap@email.cua.ban" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" placeholder="********" required>
+            </div>
+            <div class="form-options">
+                <label><input type="checkbox"> Ghi nhớ tôi</label>
+                <a href="#">Quên mật khẩu?</a>
+            </div>
+            <button type="submit" class="btn-login">Đăng nhập</button>
+        </form>
+        <p class="signup-link">Chưa có tài khoản? <a href="/register">Đăng ký ngay</a></p>
+    </div>
+
+</body>
+
+</html>

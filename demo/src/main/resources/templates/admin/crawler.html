@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title>Crawler Tool</title>
+    <style>
+        .crawler-form {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1e293b;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .form-check input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .btn-crawl {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-crawl:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-crawl:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-box {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .result-box.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .result-box.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .stat-item .stat-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .stat-item.success .stat-value {
+            color: #10b981;
+        }
+
+        .stat-item.error .stat-value {
+            color: #ef4444;
+        }
+
+        .stat-item.warning .stat-value {
+            color: #f59e0b;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
+            <h2 class="card-title">
+                <i class="fa-solid fa-spider"></i> Crawler Tool
+            </h2>
+            <div style="font-size: 0.875rem; color: #64748b;">
+                Crawl dữ liệu sách từ dtv-ebook.com.vn
+            </div>
+        </div>
+
+        <!-- Flash messages -->
+        <div th:if="${success != null}" 
+             th:classappend="${success} ? 'alert-success' : 'alert-error'" 
+             class="alert">
+            <span th:text="${message}"></span>
+        </div>
+
+        <!-- Crawler Form -->
+        <div class="crawler-form">
+            <form id="crawlerForm" method="POST" th:action="@{/admin/crawler/start}">
+                <div class="form-group">
+                    <label for="url">
+                        <i class="fa-solid fa-link"></i> URL trang web cần crawl
+                    </label>
+                    <input type="url" 
+                           id="url" 
+                           name="url" 
+                           value="https://dtv-ebook.com.vn"
+                           placeholder="https://dtv-ebook.com.vn"
+                           required>
+                    <small style="color: #64748b; margin-top: 0.25rem; display: block;">
+                        Nhập URL trang danh sách sách hoặc trang chi tiết sách
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="maxBooks">
+                        <i class="fa-solid fa-hashtag"></i> Số lượng sách tối đa
+                    </label>
+                    <input type="number" 
+                           id="maxBooks" 
+                           name="maxBooks" 
+                           value="1" 
+                           min="1" 
+                           max="100"
+                           required>
+                    <small style="color: #64748b; margin-top: 0.25rem; display: block;">
+                        Số lượng sách tối đa sẽ được crawl (1-100)
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" 
+                               id="downloadFiles" 
+                               name="downloadFiles" 
+                               value="true"
+                               checked>
+                        <label for="downloadFiles" style="margin: 0; font-weight: normal;">
+                            <i class="fa-solid fa-download"></i> Tải file sách về máy
+                        </label>
+                    </div>
+                    <small style="color: #64748b; margin-top: 0.25rem; display: block;">
+                        <strong>Lưu ý:</strong> File sách luôn được lưu trên Google Drive (nếu Drive khả dụng).<br>
+                        • <strong>Tích checkbox:</strong> Lưu trên Drive <strong>VÀ</strong> tải về thư mục uploads trên máy<br>
+                        • <strong>Không tích:</strong> Chỉ lưu trên Drive, <strong>KHÔNG</strong> tải về máy
+                    </small>
+                </div>
+
+                <button type="submit" class="btn-crawl" id="crawlBtn">
+                    <i class="fa-solid fa-play"></i> Bắt đầu Crawl
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading indicator -->
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Đang crawl dữ liệu, vui lòng đợi...</p>
+            <small style="color: #64748b;">Quá trình này có thể mất vài phút tùy vào số lượng sách</small>
+        </div>
+
+        <!-- Result Box -->
+        <div class="result-box" id="resultBox">
+            <h3 style="margin-top: 0;">
+                <i class="fa-solid fa-check-circle"></i> Kết quả Crawl
+            </h3>
+            <div class="result-stats" id="resultStats"></div>
+            <div id="errorList" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Ensure default value is 1 and downloadFiles is checked
+        document.addEventListener('DOMContentLoaded', function() {
+            const maxBooksInput = document.getElementById('maxBooks');
+            if (maxBooksInput && (!maxBooksInput.value || maxBooksInput.value === '10')) {
+                maxBooksInput.value = '1';
+            }
+            
+            // Default: checkbox is checked (both Drive and local)
+            const downloadFilesCheckbox = document.getElementById('downloadFiles');
+            // Keep current state - don't force it
+        });
+        
+        document.getElementById('crawlerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const url = document.getElementById('url').value;
+            const maxBooks = document.getElementById('maxBooks').value;
+            const downloadFiles = document.getElementById('downloadFiles').checked;
+            
+            // Show loading
+            document.getElementById('loadingIndicator').classList.add('show');
+            document.getElementById('crawlBtn').disabled = true;
+            document.getElementById('resultBox').classList.remove('show');
+            
+            // Submit via AJAX for better UX
+            fetch('/admin/crawler/crawl', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    url: url,
+                    maxBooks: maxBooks,
+                    downloadFiles: downloadFiles
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingIndicator').classList.remove('show');
+                document.getElementById('crawlBtn').disabled = false;
+                
+                const resultBox = document.getElementById('resultBox');
+                const resultStats = document.getElementById('resultStats');
+                const errorList = document.getElementById('errorList');
+                
+                if (data.success) {
+                    resultBox.classList.add('show', 'success');
+                    const result = data.result;
+                    
+                    resultStats.innerHTML = `
+                        <div class="stat-item success">
+                            <div class="stat-label">Thành công</div>
+                            <div class="stat-value">${result.successCount}</div>
+                        </div>
+                        <div class="stat-item error">
+                            <div class="stat-label">Thất bại</div>
+                            <div class="stat-value">${result.failedCount}</div>
+                        </div>
+                        <div class="stat-item warning">
+                            <div class="stat-label">Bỏ qua</div>
+                            <div class="stat-value">${result.skippedCount}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Thời gian</div>
+                            <div class="stat-value">${Math.round(result.duration / 1000)}s</div>
+                        </div>
+                    `;
+                    
+                    if (result.errors && result.errors.length > 0) {
+                        errorList.innerHTML = '<h4>Lỗi:</h4><ul>' + 
+                            result.errors.map(e => '<li>' + e + '</li>').join('') + 
+                            '</ul>';
+                    } else {
+                        errorList.innerHTML = '';
+                    }
+                } else {
+                    resultBox.classList.add('show', 'error');
+                    resultStats.innerHTML = `
+                        <div class="stat-item error">
+                            <div class="stat-label">Lỗi</div>
+                            <div class="stat-value">${data.message}</div>
+                        </div>
+                    `;
+                }
+                
+                // Scroll to result
+                resultBox.scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch(error => {
+                document.getElementById('loadingIndicator').classList.remove('show');
+                document.getElementById('crawlBtn').disabled = false;
+                
+                const resultBox = document.getElementById('resultBox');
+                resultBox.classList.add('show', 'error');
+                resultBox.querySelector('#resultStats').innerHTML = `
+                    <div class="stat-item error">
+                        <div class="stat-label">Lỗi</div>
+                        <div class="stat-value">${error.message}</div>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+
+</html>

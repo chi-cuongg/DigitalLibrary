@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{admin/layout}">
+
+<head>
+    <title>Tổng quan</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
+            <h2 class="card-title">Tổng quan hệ thống</h2>
+            <div style="font-size: 0.875rem; color: #64748b;">Hôm nay: <span
+                    th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}"></span></div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Tổng số Sách</h3>
+                    <p class="stat-value" th:text="${bookCount}">0</p>
+                </div>
+                <div class="stat-icon">
+                    <i class="fa-solid fa-book"></i>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Tổng số Người dùng</h3>
+                    <p class="stat-value" th:text="${userCount}">0</p>
+                </div>
+                <div class="stat-icon">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity or Other Widgets could go here -->
+    </div>
+</body>
+
+</html>
