@@ -29,14 +29,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        # Remove this step if it's a static HTML project without a package.json
-        run: npm install
-
-      - name: Build project
-        # Remove this step if it's a static HTML project without a build step
-        run: npm run build
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
@@ -49,7 +41,7 @@ jobs:
           # - If Next.js (static export):      './out'
           # - If static HTML (no build step):  '.'
           # ------------------------------------------------------------------------
-          path: './dist'
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
