@@ -29,6 +29,30 @@ public class HomeController {
     public String index(Model model) {
         // Need categories for the header dropdown
         model.addAttribute("categories", categoryService.findAll());
+
+        // Fetch some books to display in "Sách Nổi Bật" section
+        java.util.List<com.example.demo.model.Book> popularBooks = bookService.findAll().stream()
+            .sorted((b1, b2) -> {
+                Long views1 = b1.getViewCount() != null ? b1.getViewCount() : 0L;
+                Long views2 = b2.getViewCount() != null ? b2.getViewCount() : 0L;
+                return views2.compareTo(views1); // Descending
+            })
+            .limit(4)
+            .collect(java.util.stream.Collectors.toList());
+
+        model.addAttribute("popularBooks", popularBooks);
+
+        // Fetch statistics
+        long totalBooks = bookService.findAll().size();
+        long totalUsers = userService.findAll().size();
+        long totalViews = bookService.findAll().stream()
+            .mapToLong(b -> b.getViewCount() != null ? b.getViewCount() : 0L)
+            .sum();
+
+        model.addAttribute("totalBooks", totalBooks);
+        model.addAttribute("totalUsers", totalUsers);
+        model.addAttribute("totalViews", totalViews);
+
         return "index";
     }
 

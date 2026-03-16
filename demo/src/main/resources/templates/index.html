@@ -2,78 +2,388 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8641246868231956"
+        crossorigin="anonymous"></script>
     <meta charset="UTF-8">
+    <meta name="google-site-verification" content="d6CjjlECVUt38I8QwDgXfrJ7XR5VsJs13N0IeGkArgI" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>THCS Việt Xuân | Thư viện Số</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@300;400;500&display=swap"
+    <!-- Google Fonts: Poppins for headings, Inter for body -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <!-- AOS Animation CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
     <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Local CSS with cache bust -->
+    <link rel="stylesheet" th:href="@{/css/styles.css(v='3.0')}">
 </head>
 
 <body>
 
-    <header>
-        <a href="/" class="logo">THCS Việt Xuân</a>
+    <!-- NAVBAR -->
+    <header class="main-header" id="navbar">
+        <a href="/" class="logo">
+            <i class="fa-solid fa-graduation-cap header-icon"></i>
+            <span>THCS Việt Xuân</span>
+        </a>
         <nav>
-            <ul>
-                <li><a href="/">Trang chủ</a></li>
+            <ul class="nav-links">
+                <li><a href="/" class="nav-item"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
                 <!-- Dropdown for Categories -->
                 <li class="dropdown">
-                    <a href="#" style="cursor: pointer;">Danh mục <i class="fa-solid fa-caret-down"></i></a>
-                    <div class="dropdown-content">
-                        <a href="/catalog">Tất cả sách</a>
-                        <a th:each="cat : ${categories}" th:href="@{/catalog(categoryId=${cat.id})}"
-                            th:text="${cat.name}">Category Name</a>
+                    <a href="#" class="nav-item" style="cursor: pointer;"><i class="fa-solid fa-layer-group"></i> Danh
+                        mục <i class="fa-solid fa-chevron-down dropdown-arrow"></i></a>
+                    <div class="dropdown-content glass-dropdown">
+                        <a href="/catalog"><i class="fa-solid fa-book-open"></i> Tất cả sách</a>
+                        <a th:each="cat : ${categories}" th:href="@{/catalog(categoryId=${cat.id})}">
+                            <i class="fa-solid fa-folder-open"></i> <span th:text="${cat.name}">Category Name</span>
+                        </a>
                     </div>
                 </li>
-                <li><a href="#features">Tính năng</a></li>
-                <li><a href="#contact">Liên hệ</a></li>
+                <li><a href="#features" class="nav-item"><i class="fa-solid fa-star"></i> Tính năng</a></li>
+                <li><a href="#contact" class="nav-item"><i class="fa-solid fa-envelope"></i> Liên hệ</a></li>
 
                 <!-- Admin Dashboard only for Admins -->
-                <li th:if="${session.user != null and session.user.isAdmin()}"><a href="/admin">Admin Dashboard</a></li>
+                <li th:if="${session.user != null and session.user.isAdmin()}">
+                    <a href="/admin" class="nav-item admin-link"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+                </li>
 
-                <li th:if="${session.user == null}"><a th:href="@{/login}" class="btn-primary"
-                        style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Đăng nhập</a></li>
-                <li th:if="${session.user != null}">
-                    <span style="color: var(--text-color); margin-left: 10px;">Xin chào, <span
-                            th:text="${session.user.fullName}">User</span></span>
-                    <a th:href="@{/logout}"
-                        style="margin-left: 10px; color: var(--accent-color); font-size: 0.9rem;">(Đăng xuất)</a>
+                <!-- Auth Buttons -->
+                <li th:if="${session.user == null}" class="auth-btn-wrapper">
+                    <a th:href="@{/login}" class="btn-gradient-glow">
+                        <i class="fa-solid fa-user-circle"></i> Đăng nhập
+                    </a>
+                </li>
+                <li th:if="${session.user != null}" class="user-profile-menu">
+                    <div class="user-info">
+                        <img src="https://ui-avatars.com/api/?name=User&background=2563EB&color=fff&rounded=true&bold=true"
+                            th:src="'https://ui-avatars.com/api/?name=' + ${session.user.fullName} + '&background=2563EB&color=fff&rounded=true&bold=true'"
+                            alt="Avatar" class="user-avatar">
+                        <span class="user-name" th:text="${session.user.fullName}">User</span>
+                    </div>
+                    <a th:href="@{/logout}" class="btn-logout" title="Đăng xuất">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </a>
                 </li>
             </ul>
         </nav>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-btn">
+            <i class="fa-solid fa-bars"></i>
+        </button>
     </header>
 
-    <section id="home" class="hero">
-        <h1>Thư viện Số Trường THCS Việt Xuân</h1>
-        <p>Chào mừng các em học sinh và thầy cô. Khám phá kho tàng tri thức vô tận.</p>
-        <a href="/catalog" class="btn-primary">Khám phá Kho sách</a>
+    <!-- HERO SECTION -->
+    <section id="home" class="hero fullscreen-hero parallax-bg">
+        <div class="hero-overlay"></div>
+
+        <!-- Floating Elements -->
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <i class="fa-solid fa-book-journal-whills floating-icon book-1"></i>
+            <i class="fa-solid fa-laptop-code floating-icon laptop-1"></i>
+            <i class="fa-solid fa-lightbulb floating-icon bulb-1"></i>
+        </div>
+
+        <div class="hero-content">
+            <div class="badge-pill">
+                <span class="pulse-dot"></span> Nền tảng học tập trực tuyến 4.0
+            </div>
+
+            <h1 class="hero-title">
+                Thư viện <span class="highlight-text">số hoá</span> <br>
+                THCS Việt Xuân
+            </h1>
+
+            <p class="hero-subtitle">
+                Khám phá kho tàng tri thức vô tận. Nơi ươm mầm tài năng và khơi dậy niềm đam mê đọc sách của hàng ngàn
+                học sinh.
+            </p>
+
+            <div class="hero-cta-group">
+                <a href="/catalog" class="btn-primary-glow btn-lg ripple-effect">
+                    <i class="fa-solid fa-rocket"></i> Khám phá Kho sách
+                </a>
+                <a href="#features" class="btn-outline-glass btn-lg ripple-effect">
+                    <i class="fa-regular fa-circle-play"></i> Tìm hiểu thêm
+                </a>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+            <div class="mouse"></div>
+            <p>Cuộn xuống</p>
+        </div>
     </section>
 
-    <section id="features" class="features">
-        <div class="feature-card">
-            <h3>Truy cập Tức thì</h3>
-            <p>Đọc mọi lúc, mọi nơi. Không chờ đợi, không phí trễ hạn.</p>
-        </div>
-        <div class="feature-card">
-            <h3>Tìm kiếm Thông minh</h3>
-            <p>Tìm chính xác những gì bạn cần.</p>
-        </div>
-        <div class="feature-card">
-            <h3>Cộng đồng</h3>
-            <p>Tham gia câu lạc bộ sách, thảo luận và chia sẻ những cuốn sách yêu thích.</p>
+    <!-- LIBRARY STATISTICS -->
+    <section class="statistics-section">
+        <div class="container statistics-grid">
+            <div class="stat-box glass-card">
+                <div class="stat-icon-wrapper blue-glow">
+                    <i class="fa-solid fa-book"></i>
+                </div>
+                <!-- Total Books Dynamic -->
+                <h3 class="counter" th:attr="data-target=${totalBooks}">0</h3>
+                <p>Đầu Sách Số</p>
+            </div>
+
+            <div class="stat-box glass-card">
+                <div class="stat-icon-wrapper yellow-glow">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <!-- Total Users Dynamic -->
+                <h3 class="counter" th:attr="data-target=${totalUsers}">0</h3>
+                <p>Học Sinh Tích Cực</p>
+            </div>
+
+            <div class="stat-box glass-card">
+                <div class="stat-icon-wrapper blue-glow">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                </div>
+                <!-- Total Views Dynamic -->
+                <h3 class="counter" th:attr="data-target=${totalViews}">0</h3>
+                <p>Lượt Khám Phá</p>
+            </div>
         </div>
     </section>
 
-    <footer>
-        <p>&copy; 2024 THCS Việt Xuân. Bảo lưu mọi quyền.</p>
+    <!-- FEATURES SECTION -->
+    <section id="features" class="features-section section-padding">
+        <div class="container">
+            <div class="section-header text-center" data-aos="fade-up">
+                <h2 class="section-title">Trải Nghiệm <span class="highlight-text">Vượt Trội</span></h2>
+                <p class="section-desc">Hệ thống thư viện số mang lại những tính năng hiện đại nhất giúp việc học tập
+                    trở nên dễ dàng và thú vị hơn bao giờ hết.</p>
+            </div>
+
+            <div class="features-grid">
+                <!-- Feature 1 -->
+                <div class="feature-glass-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon bg-gradient-blue">
+                        <i class="fa-solid fa-bolt-lightning"></i>
+                    </div>
+                    <h3>Truy cập Tức thì</h3>
+                    <p>Đọc mọi lúc, mọi nơi ngay trên điện thoại hoặc máy tính. Không chờ đợi, không mất phí mượn trễ
+                        hạn.</p>
+                    <div class="hover-glow-line"></div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-glass-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon bg-gradient-yellow">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                    <h3>Tìm kiếm Thông minh</h3>
+                    <p>Hệ thống AI gợi ý sách theo sở thích. Công cụ lọc mạnh mẽ giúp tìm chính xác tài liệu bạn cần
+                        trong tích tắc.</p>
+                    <div class="hover-glow-line"></div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-glass-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-icon bg-gradient-blue">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <h3>Cộng đồng Học tập</h3>
+                    <p>Tham gia các câu lạc bộ sách ảo, chia sẻ review và thảo luận về những cuốn sách yêu thích cùng
+                        bạn bè.</p>
+                    <div class="hover-glow-line"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- POPULAR BOOKS PREVIEW SECTION -->
+    <section class="popular-books section-padding dark-bg-pattern">
+        <div class="container">
+            <div class="section-header flex-between" data-aos="fade-right">
+                <div>
+                    <h2 class="section-title">Sách <span class="highlight-text">Nổi Bật</span></h2>
+                    <p class="section-desc">Những ấn phẩm được học sinh yêu thích và đọc nhiều nhất tuần qua.</p>
+                </div>
+                <a href="/catalog" class="btn-text-arrow">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+
+            <div class="book-preview-grid">
+                <!-- Book Card Dynamic -->
+                <div class="book-3d-card" data-aos="zoom-in" data-aos-offset="-50"
+                    th:each="book, iterStat : ${popularBooks}">
+                    <a th:href="@{/books/{id}(id=${book.id})}" style="text-decoration: none; color: inherit;">
+                        <div class="book-cover-wrapper">
+                            <!-- Show HOT badge for 1st book, NEW for 2nd, etc -->
+                            <div class="book-badge hot" th:if="${iterStat.index == 0}">HOT</div>
+                            <div class="book-badge new" th:if="${iterStat.index == 1}">MỚI</div>
+                            <div class="book-badge trend" th:if="${iterStat.index == 2}">TREND</div>
+
+                            <!-- Display actual book cover or placeholder -->
+                            <img th:if="${book.imageUrl != null && !book.imageUrl.isEmpty()}" th:src="${book.imageUrl}"
+                                th:alt="${book.title}" class="book-cover">
+                            <img th:unless="${book.imageUrl != null && !book.imageUrl.isEmpty()}"
+                                src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=600&auto=format&fit=crop"
+                                th:alt="${book.title}" class="book-cover">
+
+                            <div class="book-overlay-action">
+                                <span class="read-btn"><i class="fa-solid fa-eye"></i> Xem ngay</span>
+                            </div>
+                        </div>
+                        <div class="book-info">
+                            <div class="book-category" th:if="${book.categories != null && !book.categories.isEmpty()}"
+                                th:text="${book.categories.iterator().next().name}">Thể Loại</div>
+                            <div class="book-category"
+                                th:unless="${book.categories != null && !book.categories.isEmpty()}">Khác</div>
+                            <h4 class="book-title" th:text="${book.title}">Tên Sách</h4>
+                            <div class="book-meta">
+                                <span class="rating"><i class="fa-solid fa-star"></i> 5.0</span>
+                                <span class="views">
+                                    <i class="fa-solid fa-book-open-reader"></i>
+                                    <span th:text="${book.viewCount != null ? book.viewCount : 0}">0</span>
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- If no books are available, show a fallback message -->
+                <div th:if="${popularBooks == null || popularBooks.isEmpty()}"
+                    style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary);">
+                    <p>Chưa có sách nổi bật nào.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHY JOIN US SECTION -->
+    <section class="why-us-section section-padding">
+        <div class="container container-content">
+            <div class="why-us-grid">
+                <div class="why-us-text" data-aos="fade-right">
+                    <h2 class="section-title">Tại sao chọn <br><span class="highlight-text">Thư viện Số Việt
+                            Xuân?</span></h2>
+                    <p>Chúng tôi không chỉ là một kho chứa sách điện tử. Đây là một hệ sinh thái học tập toàn diện được
+                        thiết kế riêng cho học sinh và giáo viên trong kỷ nguyên số.</p>
+
+                    <ul class="benefit-list">
+                        <li><i class="fa-solid fa-check-circle text-gradient"></i> Giao diện thân thiện, dễ sử dụng cho
+                            mọi lứa tuổi.</li>
+                        <li><i class="fa-solid fa-check-circle text-gradient"></i> Tương thích trên mọi thiết bị (Điện
+                            thoại, Tablet, PC).</li>
+                        <li><i class="fa-solid fa-check-circle text-gradient"></i> Tài liệu được chọn lọc kỹ lưỡng bám
+                            sát chương trình.</li>
+                        <li><i class="fa-solid fa-check-circle text-gradient"></i> Hoàn toàn miễn phí cho học sinh nội
+                            bộ trường.</li>
+                    </ul>
+
+                    <a href="/register" class="btn-gradient-glow mt-4">
+                        Tạo tài khoản miễn phí <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+
+                <div class="why-us-image" data-aos="fade-left">
+                    <div class="image-glass-container">
+                        <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000&auto=format&fit=crop"
+                            alt="Học sinh sử dụng thư viện" class="rounded-image">
+
+                        <!-- Floating Review Card -->
+                        <div class="floating-review glass-card">
+                            <div class="stars">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                                    class="fa-solid fa-star"></i>
+                            </div>
+                            <p>"Nền tảng tuyệt vời! Tìm sách rất nhanh."</p>
+                            <span class="author">- Học sinh Khối 8</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODERN FOOTER -->
+    <footer id="contact" class="modern-footer">
+        <div class="footer-top">
+            <div class="container footer-grid">
+                <!-- Branding -->
+                <div class="footer-brand" data-aos="fade-up">
+                    <a href="/" class="logo footer-logo">
+                        <i class="fa-solid fa-graduation-cap"></i> THCS Việt Xuân
+                    </a>
+                    <p class="footer-desc">Nền tảng thư viện số tiên tiến dành cho học sinh, mở ra cánh cửa tri thức mọi
+                        lúc, mọi nơi.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-btn"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#" class="social-btn"><i class="fa-brands fa-youtube"></i></a>
+                        <a href="#" class="social-btn"><i class="fa-solid fa-globe"></i></a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-links" data-aos="fade-up" data-aos-delay="100">
+                    <h4>Liên kết nhanh</h4>
+                    <ul>
+                        <li><a href="/"><i class="fa-solid fa-chevron-right"></i> Trang chủ</a></li>
+                        <li><a href="/catalog"><i class="fa-solid fa-chevron-right"></i> Kho sách</a></li>
+                        <li><a href="#features"><i class="fa-solid fa-chevron-right"></i> Tính năng</a></li>
+                        <li><a href="/login"><i class="fa-solid fa-chevron-right"></i> Đăng nhập</a></li>
+                    </ul>
+                </div>
+
+                <!-- Categories -->
+                <div class="footer-links" data-aos="fade-up" data-aos-delay="200">
+                    <h4>Danh mục phổ biến</h4>
+                    <ul>
+                        <li><a href="#"><i class="fa-solid fa-chevron-right"></i> Sách Giáo Khoa</a></li>
+                        <li><a href="#"><i class="fa-solid fa-chevron-right"></i> Sách Tham Khảo</a></li>
+                        <li><a href="#"><i class="fa-solid fa-chevron-right"></i> Văn Học Thư Giãn</a></li>
+                        <li><a href="#"><i class="fa-solid fa-chevron-right"></i> Đề Thi & Đáp Án</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="footer-contact" data-aos="fade-up" data-aos-delay="300">
+                    <h4>Liên hệ</h4>
+                    <ul class="contact-info">
+                        <li>
+                            <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
+                            <div>Trường THCS Việt Xuân, Vĩnh Tường, Vĩnh Phúc</div>
+                        </li>
+                        <li>
+                            <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
+                            <div><a href="mailto:contact@thcsvietxuan.edu.vn">contact@thcsvietxuan.edu.vn</a></div>
+                        </li>
+                        <li>
+                            <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
+                            <div><a href="tel:0123456789">0123.456.789</a></div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container flex-between align-center mobile-col">
+                <p>&copy; 2024 Bản quyền thuộc về Trường THCS Việt Xuân.</p>
+                <div class="footer-bottom-links">
+                    <a href="#">Điều khoản sử dụng</a>
+                    <a href="#">Chính sách bảo mật</a>
+                </div>
+            </div>
+        </div>
     </footer>
 
-    <script th:src="@{/js/main.js}"></script>
+    <!-- Scripts -->
+    <!-- AOS Animate On Scroll Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script th:src="@{/js/main.js(v='3.0')}"></script>
 </body>
 
 </html>
