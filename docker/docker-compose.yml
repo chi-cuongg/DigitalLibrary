@@ -24,6 +24,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: digitallibrary_pma
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+    networks:
+      - app-network
 
   # Spring Boot Application
   app:
