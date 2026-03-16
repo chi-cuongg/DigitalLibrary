@@ -16,7 +16,7 @@ public class Book {
 
     private String author;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "image_url", length = 500)

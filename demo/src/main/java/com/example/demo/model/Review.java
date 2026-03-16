@@ -16,7 +16,7 @@ public class Review {
     @Column(nullable = false)
     private Integer rating; // 1-5
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Column(columnDefinition = "TEXT")
     private String comment; // Renamed from content to comment
 
     @Column(name = "created_at")

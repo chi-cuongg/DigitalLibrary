@@ -11,10 +11,10 @@ public class OAuthToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "refresh_token", nullable = false, columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "refresh_token", nullable = false, columnDefinition = "TEXT")
     private String refreshToken;
 
-    @Column(name = "access_token", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "access_token", columnDefinition = "TEXT")
     private String accessToken;
 
     @Column(name = "expires_at")
