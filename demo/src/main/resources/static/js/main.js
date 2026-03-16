@@ -21,14 +21,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 2. Sticky Navbar & Scroll Effects
     const navbar = document.getElementById('navbar');
-    
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
+
+    if (navbar) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    }
 
     // 3. Ripple Effect for Buttons
     const rippleButtons = document.querySelectorAll('.ripple-effect');
@@ -36,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.addEventListener('mousedown', function (e) {
             let x = e.clientX - e.target.getBoundingClientRect().left;
             let y = e.clientY - e.target.getBoundingClientRect().top;
-            
+
             let ripples = document.createElement('span');
             ripples.style.left = x + 'px';
             ripples.style.top = y + 'px';
@@ -46,9 +48,9 @@ document.addEventListener('DOMContentLoaded', function () {
             ripples.style.pointerEvents = 'none';
             ripples.style.borderRadius = '50%';
             ripples.style.animation = 'animateRipple 1s linear';
-            
+
             this.appendChild(ripples);
-            
+
             setTimeout(() => {
                 ripples.remove();
             }, 1000);
@@ -64,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const target = +counter.getAttribute('data-target');
             const duration = 2000; // ms
             const increment = target / (duration / 16); // 60fps
-            
+
             let current = 0;
             const updateCounter = () => {
                 current += increment;
@@ -73,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     requestAnimationFrame(updateCounter);
                 } else {
                     counter.innerText = target.toLocaleString();
-                    if(target > 1000) counter.innerText += '+';
+                    if (target > 1000) counter.innerText += '+';
                 }
             };
             updateCounter();
@@ -89,20 +91,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 hasAnimated = true;
             }
         }, { threshold: 0.5 });
-        
+
         observer.observe(statsSection);
     }
 
     // 5. Mild Parallax on Mouse Move (Hero Section)
     const heroSection = document.querySelector('.fullscreen-hero');
     const floatingShapes = document.querySelectorAll('.shape');
-    
+
     if (heroSection) {
         heroSection.addEventListener('mousemove', (e) => {
             // Calculate mouse position relative to center of screen
             const x = e.clientX / window.innerWidth;
             const y = e.clientY / window.innerHeight;
-            
+
             floatingShapes.forEach((shape, index) => {
                 const speed = (index + 1) * 20;
                 const xOffset = (window.innerWidth / 2 - e.pageX) / speed;
@@ -110,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 shape.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
             });
         });
-        
+
         // Reset when mouse leaves
         heroSection.addEventListener('mouseleave', () => {
             floatingShapes.forEach(shape => {
